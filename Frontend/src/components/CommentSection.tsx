@@ -1,20 +1,24 @@
 import { KeyboardEvent, useState } from "react";
 import { allPost, stateStruct } from "../interfaces/user_interface";
 import { useDispatch, useSelector } from "react-redux";
-import { AddComment } from "../features/login/Userslice";
+import { AddComment, AddCommentCount } from "../features/login/Userslice";
 import Swal from "sweetalert2";
 import conf from "../conf/conf";
 
 type CommentSectionProps = {
   allComment: any[];
+  setCommentCount: React.Dispatch<React.SetStateAction<number>>;
   setAllComment: React.Dispatch<React.SetStateAction<any[]>>;
+  commentCount: number;
   postData: allPost;
 };
 
 export default function CommentSection({
+  commentCount,
   allComment,
   setAllComment,
   postData,
+  setCommentCount,
 }: CommentSectionProps) {
   const [comment, setComment] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -49,42 +53,43 @@ export default function CommentSection({
       }),
     })
       .then((res) => {
-        if (!res.ok) {
-          throw new Error("Failed to post comment");
-        }
         return res.json();
       })
-      .then(() => {
-        // After successful post, fetch updated comments
-        return fetch(`${conf.apiUrl}/posts/${postData.postId}/comments`, {
-          method: "GET",
-          credentials: "include",
-        });
-      })
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error("Failed to fetch comments");
-        }
-        return res.json();
-      })
-      .then((res) => {
-        // Update comments list without hiding open replies
-        setAllComment(res.data);
+      .then((result) => {
+        // // After successful post, fetch updated comments
+        // return fetch(`${conf.apiUrl}/posts/${postData.postId}/comments`, {
+        //   method: "GET",
+        //   credentials: "include",
+        // });
+        console.log(result.data, "New Comment");
+        const updatedComments = [result.data, ...allComment];
 
-        // Clear the comment input
+        setAllComment(updatedComments);
+
+        setCommentCount(commentCount + 1);
         setComment("");
+      })
 
-        // Optional: Dispatch to Redux if needed
-        // dispatch(AddComment({ post_id: postData.postId, CommentText: comment }));
-      })
-      .catch((error) => {
-        console.error("Error handling comment:", error);
-        Swal.fire({
-          title: "Error",
-          text: "Failed to post your comment. Please try again.",
-          icon: "error",
-        });
-      })
+      // const updatedComments = res.data;
+
+      // setAllComment(updatedComments);
+
+      // setCommentCount(commentCount + 1);
+      // setComment("");
+      // setAllComment(res.data);
+
+      // dispatch(
+      //   AddCommentCount({
+      //     postId: postData.postId,
+      //   })
+      // );
+      // Clear the comment input
+      // setCommentCount(commentCount + 1);
+      // setComment("");
+
+      // Optional: Dispatch to Redux if needed
+      // dispatch(AddComment({ post_id: postData.postId, CommentText: comment }));
+
       .finally(() => {
         setIsSubmitting(false);
       });

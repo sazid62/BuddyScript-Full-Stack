@@ -112,13 +112,8 @@ export default class PostService {
   }
 
   // New methods for fetching data
-  public async getAllPosts() {
-    const postExist = await Post.query().count('*', 'total').first()
-    if (!postExist || postExist.total === 0) {
-      throw new Exception('No posts found')
-    }
-
-    return await this.postQuery.getAllPosts()
+  public async getAllPosts(current_user_email: string) {
+    return await this.postQuery.getAllPosts(current_user_email)
   }
 
   public async getPostLikes(postId: number) {

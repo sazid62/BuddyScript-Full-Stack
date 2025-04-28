@@ -39,8 +39,27 @@ export interface allPost {
   userId: number;
   postText: string;
   postCreatedAt: string;
-  user?: allPostUser[];
+  user: AllPostUser;
+  totalLikes: number;
+  last10users: Last10User[];
+  commentCount: number;
+  liked: boolean;
 }
+
+export interface AllPostUser {
+  userId: number;
+  name: string;
+  email: string;
+  meta: {
+    image: string;
+  };
+}
+
+export interface Last10User {
+  email: string;
+  userId: number;
+}
+
 export interface Comment {
   comment_id: string;
   commentor_id: string;

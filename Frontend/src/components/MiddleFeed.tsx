@@ -3,15 +3,14 @@ import MessengerCircle from "./MessngerCircle";
 import PostFromHere from "./PostFromHere";
 import { allPost, Post, stateStruct } from "../interfaces/user_interface";
 import { useSelector } from "react-redux";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import PernewsAndRecentComment from "./PernewsAndRecentComment";
+import { nanoid } from "@reduxjs/toolkit";
 
 export default function MiddleFeed() {
-  const post = useSelector((state: stateStruct) => state.allPost);
-  useEffect(() => {
-    // if (post.length) console.log(post, "HEY");
-  }, [post]);
-  // console.log(post, "post");
+  const [ok, setOk] = useState<boolean>(false);
+  const allPosts = useSelector((state: stateStruct) => state.allPost) || [];
+  const currentUser = useSelector((state: stateStruct) => state.currentuser);
 
   return (
     <div className="col-xl-6 col-lg-6 col-md-12 col-sm-12 m-auto">
@@ -21,9 +20,10 @@ export default function MiddleFeed() {
 
           <MessengerCircle />
 
-          <PostFromHere />
-          {post.map((elem: allPost, index) => (
-            <PernewsAndRecentComment key={index} {...elem} />
+          <PostFromHere setOk={setOk} />
+
+          {allPosts.map((post: allPost, index: number) => (
+            <PernewsAndRecentComment key={post.postId} {...post} />
           ))}
           {/* {post.map(
             (elem: Post, index) =>

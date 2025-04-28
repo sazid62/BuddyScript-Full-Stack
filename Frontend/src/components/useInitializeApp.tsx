@@ -1,12 +1,15 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { initializeAllPost, initializeUser } from "../features/login/Userslice";
+import { useNavigate } from "react-router-dom";
+import { retry } from "@reduxjs/toolkit/query";
+import { current } from "@reduxjs/toolkit";
 
 // This function should not be called directly in useEffect
 // It's properly formatted as a custom React hook that can be called at the top level of a component
 export const useInitializeApp = (shouldInitialize) => {
   const dispatch = useDispatch();
-
+  const navigate = useNavigate();
   useEffect(() => {
     if (!shouldInitialize) return;
     const initApp = async () => {
@@ -20,20 +23,27 @@ export const useInitializeApp = (shouldInitialize) => {
         });
         const userData = await userResponse.json();
 
-        // initialize user
-        dispatch(
-          initializeUser({
-            userId: userData.userId || "",
-            email: userData.email || "",
-          })
-        );
+        if (!userData.errors) {
+          // initialize user
+          dispatch(
+            initializeUser({
+              userId: userData.userId || "",
+              email: userData.email || "",
+            })
+          );
 
-        // fetch posts
-        const postsResponse = await fetch(`http://localhost:3333/posts`, {
-          method: "GET",
-        });
-        const allPost = await postsResponse.json();
-        dispatch(initializeAllPost(allPost.data));
+          // fetch posts
+          const postsResponse = await fetch(
+            `http://localhost:3333/${userData.email}/posts`,
+            {
+              method: "GET",
+            }
+          );
+          const allPost = await postsResponse.json();
+          dispatch(initializeAllPost(allPost.data));
+          navigate("/home");
+          return 1;
+        } else return 0;
       } catch (error) {
         dispatch(
           initializeUser({
@@ -41,11 +51,14 @@ export const useInitializeApp = (shouldInitialize) => {
             email: "",
           })
         );
+
+        return 0;
       }
     };
 
     initApp();
   }, []); // Empty dependency array means this effect runs only once when the component mounts
+  // return 1;
 };
 
 export function logoutFromServer() {

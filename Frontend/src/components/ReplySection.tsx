@@ -1,4 +1,4 @@
-import { KeyboardEvent, useState } from "react";
+import React, { KeyboardEvent, useState } from "react";
 import { CommentWPostId, stateStruct } from "../interfaces/user_interface";
 import { useDispatch, useSelector } from "react-redux";
 import { AddReply } from "../features/login/Userslice";
@@ -10,12 +10,17 @@ type ReplySectionProps = CommentWPostId & {
   allReplies: any[];
   setAllReplies: React.Dispatch<React.SetStateAction<any[]>>;
   setReply: React.Dispatch<React.SetStateAction<boolean>>;
+
+  showTotalReplies: number;
+  setShowTotalReplies: React.Dispatch<React.SetStateAction<number>>;
 };
 
 export default function ReplySection({
   allReplies,
   setAllReplies,
   setReply,
+  showTotalReplies,
+  setShowTotalReplies,
   ...props
 }: ReplySectionProps) {
   const [replyText, setReplyText] = useState<string>("");
@@ -42,18 +47,31 @@ export default function ReplySection({
         replyText: replyText,
       })
       .then((res) => {
-        console.log(res);
+        console.log(allReplies, "allreplies");
+        console.log(res.data, "reData");
+        setAllReplies([
+          {
+            ...res.data.data,
+            user: {
+              email: current_user.email,
+            },
+          },
+          ...allReplies,
+        ]);
+        setReply(true); // Keep the replies section open
+        setShowTotalReplies(showTotalReplies + 1);
 
         // After successfully posting the reply, fetch updated replies
-        axios
-          .get(`${conf.apiUrl}/comments/${props.comment_id}/replies`)
-          .then((response) => {
-            setAllReplies(response.data.data);
-            setReply(true); // Keep the replies section open
-          })
-          .catch((err) => {
-            console.error("Error fetching replies:", err);
-          });
+        // axios
+        //   .get(`${conf.apiUrl}/comments/${props.comment_id}/replies`)
+        //   .then((response) => {
+        //     setAllReplies(response.data.data);
+        //     setReply(true); // Keep the replies section open
+        //     setShowTotalReplies(showTotalReplies + 1);
+        //   })
+        //   .catch((err) => {
+        //     console.error("Error fetching replies:", err);
+        //   });
       })
       .catch((err) => {
         console.error("Error posting reply:", err);
@@ -70,7 +88,7 @@ export default function ReplySection({
   }
 
   return (
-    <div>
+    <div key={props.comment_id}>
       <div className="_feed_inner_timeline_cooment_area ">
         <div className="_feed_inner_comment_box bg-white">
           <form className="_feed_inner_comment_box_form">

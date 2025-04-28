@@ -16,13 +16,12 @@ export default function Regtemp() {
   const dispatch = useDispatch();
   const [initializeAll, setInititalizeAll] = useState(false);
 
-  const navigate = useNavigate();
-  if (initializeAll) {
-    console.log("calling INITIALIZSE");
-    useInitializeApp(dispatch);
-    navigate("/home");
-  }
   const current_user = useSelector((state: stateStruct) => state.currentuser);
+  const navigate = useNavigate();
+  useInitializeApp(1);
+  if (current_user.email) {
+    navigate("/");
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,6 +29,7 @@ export default function Regtemp() {
     const email = formData.get("email");
     const password = formData.get("password");
     const ref_pass = formData.get("rep_password");
+
     if (password !== ref_pass) {
       Swal.fire({
         title: "Passwords don't match",
@@ -51,47 +51,42 @@ export default function Regtemp() {
           credentials: "include",
           body: JSON.stringify(payload),
         });
-        await fetch("http://localhost:3333/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        });
+
+        const data = await res.json(); // Parse the response body once!
 
         if (res.ok) {
-          const data = await res.json();
+          await fetch("http://localhost:3333/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify(payload),
+          });
 
           Swal.fire({
             title: "User created successfully!",
             icon: "success",
           });
 
-          // dispatch(
-          //   initializeUser({
-          //     userId: data.data.userId || "",
-          //     email: data.data.email || "",
-          //   })
-          // );
           setInititalizeAll(true);
-
-          //make all post, and currentuser inititalize
+          navigate("/home");
         } else {
           Swal.fire({
-            title: "Error In Backend",
+            title: data.error || "Something went wrong", // Show the message from backend
             icon: "warning",
           });
         }
       } catch (error) {
         Swal.fire({
           title: "Something went wrong!",
-          text: error.message || "Please try again later.",
+          text: error.error || "Please try again later.",
           icon: "error",
         });
       }
     }
   }
+
   return (
     <div>
       <section className="_social_registration_wrapper _layout_main_wrapper">

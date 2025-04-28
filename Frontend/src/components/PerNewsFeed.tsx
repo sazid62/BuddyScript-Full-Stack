@@ -3,6 +3,7 @@ import { allPost, Post, stateStruct } from "../interfaces/user_interface";
 import { useDispatch, useSelector } from "react-redux";
 import { current } from "@reduxjs/toolkit";
 import {
+  AddCommentCount,
   AddReact,
   DeletePost,
   EditPost,
@@ -18,7 +19,6 @@ import CommentSection from "./CommentSection";
 import RecentComment from "./RecentComment";
 import Swal from "sweetalert2";
 import EditPost_DropDown from "./EditPost_DropDown";
-import { useInitializeApp, fetchAllLiker } from "./useInitializeApp";
 import axios from "axios";
 import conf from "../conf/conf";
 
@@ -27,16 +27,8 @@ interface PostExtends extends allPost {
   handleShowCmnt: () => void;
 }
 
-/*************  ✨ Windsurf Command ⭐  *************/
-/**
- * Takes a post time in ISO format and returns a string of how long ago the post was made.
- * @param {string} postTime - post time in ISO format
- * @returns {string} - time ago string
- */
-/*******  e58e2c7d-4da4-45bd-a2dc-6ab987f5ef0a  *******/
 const getTimeAgo = (postTime: string): string => {
   const postTimestamp = new Date(postTime).getTime();
-  // console.log(postTime, "RABBYB");
   const seconds = Math.floor((Date.now() - postTimestamp) / 1000);
 
   if (seconds < 60) {
@@ -59,29 +51,29 @@ const getTimeAgo = (postTime: string): string => {
 
 export default function PerNewsFeed(props: PostExtends) {
   const current_user = useSelector((state: stateStruct) => state.currentuser);
+  const allPost = useSelector((state: stateStruct) => state.allPost);
+  const dispatch = useDispatch();
 
   const [isDropShow, setIsDropShow] = useState(false);
-  const [allComment, setAllComment] = useState([]);
   const [clickOnCommentButton, setClickOnCommentButton] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [allLikers, setAllLikers] = useState<{
-    totalLikes: number;
-    last10users: string[];
-  }>({
-    totalLikes: 0,
-    last10users: [],
-  });
-
-  const [clickedLikeButton, setClickedLikeButton] = useState<boolean | null>(
-    null
+  const [EditAble, setEditAble] = useState<boolean>(false);
+  const [newText, setNewtext] = useState<string>(props.postText);
+  const [allComment, setAllComment] = useState([]);
+  const [commentCount, setCommentCount] = useState(props.commentCount);
+  // Get current post data from Redux store
+  const [clickedLikeButton, setClickedLikeButton] = useState<boolean>(
+    props.liked
   );
-  const [clickOnDeleteButton, setClickOnDeleteButton] = useState(false);
+
+  // console.log(props, "props");
+
+  // Event handlers
   const handleButtonClick = () => {
     setIsDropShow((prev) => !prev);
   };
 
-  // console.log(allLikers, "LIKERRRRRRRRRRRRRRRRRRR");
   const handleMouseDown = (event: MouseEvent) => {
     if (
       dropdownRef.current &&
@@ -93,72 +85,15 @@ export default function PerNewsFeed(props: PostExtends) {
     }
   };
 
-  const dispatch = useDispatch();
-
-  // FIX: Replace direct hook call with a regular function
-  useEffect(() => {
-    // Use a regular function instead of the hook
-    const fetchPosts = async () => {
-      try {
-        const postsResponse = await fetch(`${conf.apiUrl}/posts`, {
-          method: "GET",
-        });
-        const allPost = await postsResponse.json();
-        dispatch(initializeAllPost(allPost.data));
-      } catch (error) {
-        console.error("Failed to fetch posts:", error);
-      }
-    };
-
-    fetchPosts();
-  }, [clickOnDeleteButton, dispatch]);
-
-  useEffect(() => {
-    fetch(`${conf.apiUrl}/posts/${props.postId}/comments`, {
-      method: "GET",
-    })
-      .then((res) => res.json())
-      .then((res) => setAllComment(res.data));
-  }, [props.postId]);
-  // console.log(allComment, "sajid see");
-  useEffect(() => {
-    const fetchInitialLikeStatus = async () => {
-      try {
-        const response = await axios.post("http://localhost:3333/isliked", {
-          postId: props.postId,
-          userId: current_user.id,
-        });
-
-        setClickedLikeButton(response.data ? true : false);
-      } catch (error) {
-        console.error("Failed to fetch like status", error);
-        setClickedLikeButton(false);
-      }
-    };
-
-    fetchInitialLikeStatus();
-
-    fetch(`http://localhost:3333/posts/${props.postId}/likes`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setAllLikers(data.data);
-      });
-  }, [clickedLikeButton, props.postId, current_user.id]);
-
+  // Setup event listener for dropdown
   useEffect(() => {
     document.addEventListener("mousedown", handleMouseDown);
-
     return () => {
       document.removeEventListener("mousedown", handleMouseDown);
     };
   }, []);
 
+  // Toggle dropdown visibility
   useEffect(() => {
     const notifyDropdown = document.querySelector<HTMLDivElement>(
       "#_notify_drop" + props.postId
@@ -166,47 +101,44 @@ export default function PerNewsFeed(props: PostExtends) {
     if (notifyDropdown) {
       if (isDropShow) {
         notifyDropdown.classList.add("show");
-        //  console.log("shown");
       } else {
         notifyDropdown.classList.remove("show");
-        console.log("hidden");
       }
     }
   }, [isDropShow, props.postId]);
 
-  // const post_user = useSelector((state: stateStruct) => state.user_info).find(
-  //   (elem) => elem.id === props.userId
-  // );
-  const post_user = {};
-  // console.log(props)
-
-  // const postInfo = useSelector((state: stateStruct) => state.AllUserPost).find(
-  //   (elem) => elem.post_id === props.postId
-  // );
-
-  const postInfo = [{}];
-  const allUser = useSelector((state: stateStruct) => state.user_info);
-
-  // console.log(postInfo)
-  // const check_user = postInfo?.countReact.findIndex(
-  //   (elem) => elem.reactor_id === current_user.id
-  // );
-
-  const check_user = [{}];
   function reactHandler() {
+    setClickedLikeButton((prev) => !prev);
+    console.log(clickedLikeButton, "Like");
     const handleLikeToggle = async () => {
       try {
-        if (clickedLikeButton === false) {
+        if (!props.liked) {
           await axios.post("http://localhost:3333/likepost", {
             postId: props.postId,
             userId: current_user.id,
           });
-          setClickedLikeButton(true);
-        } else if (clickedLikeButton === true) {
+
+          // Update like info in Redux store
+          dispatch(
+            AddReact({
+              postId: props.postId,
+              userId: current_user.id,
+              liked: true,
+            })
+          );
+        } else {
           await axios.post("http://localhost:3333/dislikepost", {
             post_id: props.postId,
           });
-          setClickedLikeButton(false);
+
+          // Update like info in Redux store
+          dispatch(
+            AddReact({
+              postId: props.postId,
+              userId: current_user.id,
+              liked: false,
+            })
+          );
         }
       } catch (error) {
         console.error("Error toggling like:", error);
@@ -215,14 +147,17 @@ export default function PerNewsFeed(props: PostExtends) {
 
     handleLikeToggle();
   }
+
+  // Hide post
   function Handlehide() {
     dispatch(
       HidePost({
-        // post_id: props.post_id,
+        postId: props.postId,
       })
     );
-    // console.log("we are in webpage  " + props.post_id);
   }
+
+  // Delete post
   async function handleDelete() {
     Swal.fire({
       title: "Are you sure?",
@@ -233,67 +168,67 @@ export default function PerNewsFeed(props: PostExtends) {
       cancelButtonText: "No, keep it",
     }).then((result) => {
       if (result.isConfirmed) {
-        axios.post(`${conf.apiUrl}/deletepost`, {
-          postId: props.postId,
-          userId: props.userId,
-        });
+        axios
+          .post(`${conf.apiUrl}/deletepost`, {
+            postId: props.postId,
+            userId: props.userId,
+          })
+          .then(() => {
+            // Update Redux store after successful deletion
+            dispatch(DeletePost({ postId: props.postId }));
+          });
       }
-
-      setClickOnDeleteButton(!clickOnDeleteButton);
     });
   }
 
-  const [EditAble, setEditAble] = useState<boolean>(false);
-  const [newText, setNewtext] = useState<string>(props.postText);
-  // console.log(EditAble);
-
+  // Toggle edit mode
   function handleEdit() {
-    // alert(props.post_id)
     setNewtext(props.postText);
     setEditAble(!EditAble);
   }
 
-  // function handleEditSubmit(updatedText) {
-  //   console.log("This is handle new TEXT:", updatedText);
-  //   dispatch(
-  //     EditPost({
-  //       post_id: props.postId,
-  //       newText: updatedText, // Use the updated newText passed from the child
-  //     })
-  //   );
-  //   setEditAble(!EditAble);
-  // }
+  // Submit edited post
+  function handleEditSubmit(updatedText) {
+    console.log(updatedText, "UpdatedText");
+    axios
+      .post(`${conf.apiUrl}/editpost`, {
+        postId: props.postId,
+        userId: props.userId,
+        postText: updatedText,
+      })
+      .then(() => {
+        // Update Redux store after successful edit
+        dispatch(
+          EditPost({
+            postId: props.postId,
+            newText: updatedText,
+          })
+        );
+        setEditAble(false);
+      });
+  }
 
+  // Show users who liked the post
   const handleShowAllUserWhoLike = () => {
-    // const allReactorID = postInfo?.countReact.map(
-    //   (eachReactor) => eachReactor.reactor_id
-    // );
-
-    const allReactorID = [{}];
-
-    const allReactorUsername = allUser
-      .filter((user) => allReactorID?.includes(user.id))
-      .map((user) => user.email);
     const userListHtml =
-      allLikers.totalLikes > 0
+      props.last10users && props.last10users.length > 0
         ? `<ul style="text-align: left; padding-left: 20px;">
-            ${allLikers.last10users
-              .map((name) => `<li>~ ${name.email}</li>`)
+            ${props.last10users
+              .map((user) => `<li>~ ${user.email}</li>`)
               .join("")}
            </ul>`
         : "<p style='color: gray;'>No users have liked this yet.</p>";
-    // console.log(allReactorUsername);
+
     Swal.fire({
       title: "Users Who Liked",
       html: userListHtml,
-
       showCancelButton: false,
       confirmButtonText: "Close",
     });
   };
-
+  // console.log(props, "PerPost ");
   return (
-    <body>
+    <body key={props.postId}>
       <div>
         <div className="_feed_inner_timeline_post_area _b_radious6 _padd_b24 _padd_t24 _mar_b16">
           <div className="_feed_inner_timeline_content _padd_r24 _padd_l24">
@@ -495,9 +430,9 @@ export default function PerNewsFeed(props: PostExtends) {
                 <div>
                   <h4 className="_feed_inner_timeline_post_title">{newText}</h4>
                   <EditPost_DropDown
-                    // handleEditSubmit={handleEditSubmit}
+                    handleEditSubmit={handleEditSubmit}
                     newText={newText}
-                    profile={post_user?.img}
+                    profile={props?.img}
                   />
                 </div>
               </div>
@@ -514,19 +449,17 @@ export default function PerNewsFeed(props: PostExtends) {
           <div className="_feed_inner_timeline_total_reacts _padd_r24 _padd_l24 _mar_b26">
             <div className="">
               <button className="mx-1 flex flex-row items-center gap-1">
-                <p className="font-bold text-blue-600">
-                  {allLikers.totalLikes}{" "}
-                </p>
+                <p className="font-bold text-blue-600">{props.totalLikes} </p>
                 <h1 onClick={handleShowAllUserWhoLike}>
-                  {allLikers.totalLikes <= 1 ? "Like" : "Likes"}{" "}
+                  {props.totalLikes <= 1 ? "Like" : "Likes"}{" "}
                 </h1>
               </button>
             </div>
             <div className="_feed_inner_timeline_total_reacts_txt">
               <p className="_feed_inner_timeline_total_reacts_para1">
-                <a onClick={props.handleShowCmnt} href="#0">
+                <a href="#0">
                   {/* <span>{postInfo?.Comments.length}</span> Comment */}
-                  <span>{allComment.length}</span> Comment
+                  <span>{commentCount}</span> Comment
                 </a>
               </p>
               <p className="_feed_inner_timeline_total_reacts_para2">
@@ -562,10 +495,27 @@ export default function PerNewsFeed(props: PostExtends) {
                 Liked
               </button>
             )}
-
+            {/* Comment */}
             <button
               onClick={() => {
+                if (!clickOnCommentButton) {
+                  fetch(`${conf.apiUrl}/posts/${props.postId}/comments`, {
+                    method: "GET",
+                    credentials: "include",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                  })
+                    .then((res) => res.json())
+                    .then((data) => {
+                      console.log("sajid");
+                      dispatch(AddCommentCount(props.postId));
+                      setAllComment(data.data);
+                    });
+                }
                 setClickOnCommentButton(!clickOnCommentButton);
+
+                console.log(clickOnCommentButton, "COmment");
                 props.handleShowCmnt;
               }}
               className="_feed_inner_timeline_reaction_comment _feed_reaction"
@@ -629,6 +579,8 @@ export default function PerNewsFeed(props: PostExtends) {
                 postData={props}
                 setAllComment={setAllComment}
                 allComment={allComment}
+                setCommentCount={setCommentCount}
+                commentCount={commentCount}
               />
 
               <RecentComment

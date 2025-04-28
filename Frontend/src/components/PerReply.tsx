@@ -11,10 +11,7 @@ export default function PerReply(allReplies) {
   }
   return (
     <div>
-      <div
-        key={allReplies.replier_id}
-        className="flex items-start space-x-4 mb-3 bg-gray-50 p-2 rounded-2xl"
-      >
+      <div className="flex items-start space-x-4 mb-3 bg-gray-50 p-2 rounded-2xl">
         <div>
           <img
             src="https://i.pravatar.cc/48?u=1151223"

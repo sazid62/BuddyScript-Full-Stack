@@ -38,6 +38,7 @@ export default function DropDown() {
         dispatch(logOutUser());
         Swal.fire("Logged out!", "You have been logged out.", "success");
         navigate("/");
+        // window.location.reload();
       } else if (result.dismiss === Swal.DismissReason.cancel) {
         Swal.fire("Cancelled", "You are still logged in.", "info");
       }

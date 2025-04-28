@@ -22,10 +22,7 @@ function App() {
   const dispatch = useDispatch();
   const current_user = useSelector((state: stateStruct) => state.currentuser);
 
-  useEffect(() => {
-    //intialize current User
-  }, []);
-  useInitializeApp(1);
+  // useInitializeApp(1);
   // Redirect if not logged in
   useEffect(() => {
     // console.log(location.pathname, "path");

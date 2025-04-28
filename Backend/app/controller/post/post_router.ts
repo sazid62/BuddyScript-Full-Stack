@@ -15,7 +15,7 @@ router.group(() => {
   router.post('/dislikereplycomment', [PostController, 'dislikereplycomment'])
 
   // New data fetching routes
-  router.get('/posts', [PostController, 'getAllPosts'])
+  router.get('/:current_user/posts', [PostController, 'getAllPosts'])
   router.get('/posts/:postId/likes', [PostController, 'getPostLikes'])
   router.get('/posts/:postId/comments', [PostController, 'getPostComments'])
   router.get('/comments/:commentId/replies', [PostController, 'getCommentReplies'])
@@ -24,4 +24,5 @@ router.group(() => {
   router.get('/comments/:commentId/likes', [PostController, 'getCommentLikes'])
 
   router.post('/isliked', [PostController, 'isliked'])
+  router.post('/editpost', [PostController, 'editpost'])
 })

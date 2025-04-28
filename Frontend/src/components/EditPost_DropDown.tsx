@@ -21,11 +21,11 @@ export default function EditPost_DropDown({
       setIsSubmitting(true);
       // Simulate API call
       setTimeout(() => {
+        handleEditSubmit(postText);
         console.log("Post submitted:", postText);
-        setPostText("");
         setIsSubmitting(false);
         setIsOpen(false);
-        handleEditSubmit(postText);
+        setPostText("");
       }, 1000);
     }
   };

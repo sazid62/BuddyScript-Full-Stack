@@ -6,6 +6,7 @@ import CommentReply from '#models/comment_reply'
 import CommentLike from '#models/coment_like'
 import CommentRepliesLike from '#models/comment_replies_likes'
 import db from '@adonisjs/lucid/services/db'
+import { current } from '@reduxjs/toolkit'
 
 export default class PostQuery {
   // Existing methods
@@ -16,17 +17,14 @@ export default class PostQuery {
 
     await newPost.save()
 
-    const post = await Post.query()
-      .where('post_id', newPost.postId)
-      .preload('user', (q) => {
-        q.select('name')
-      })
-      .firstOrFail()
+    const post = await Post.query().where('post_id', newPost.postId).preload('user').firstOrFail() // ✅ Get a single post, not an array
 
     return {
-      user_id: payload.user_id,
-      user_name: post.user.name,
-      post_text: payload.post_text,
+      ...post.serialize(), // ✅ serialize() to convert into a plain object
+      totalLikes: 0,
+      last10users: [],
+      commentCount: 0,
+      liked: false,
     }
   }
 
@@ -53,7 +51,28 @@ export default class PostQuery {
     newComment.commentText = payload.commentText
     await newComment.save()
 
-    return newComment
+    const userName = await User.query().where('user_id', payload.userId).first()
+
+    //   {
+    //     "commentId": 796,
+    //     "postId": 281,
+    //     "userId": 115,
+    //     "commentText": "2222222222",
+    //     "commentedAt": "2025-04-27T11:32:11.000+00:00",
+    //     "isEdited": 0,
+    //     "userName": "aaaaa@gmail.com",
+    //     "totalReplies": 0
+    // },
+    return {
+      userId: newComment.userId,
+      postId: newComment.postId,
+      commentText: newComment.commentText,
+      commentedAt: newComment.commentedAt,
+      commentId: newComment.commentId,
+      totalReplies: 0,
+      isEdited: 0,
+      userName: userName?.email,
+    }
   }
 
   public async replyComment(payload: { userId: number; commentId: number; replyText: string }) {
@@ -119,13 +138,55 @@ export default class PostQuery {
     }
   }
 
-  // New methods for fetching data
-  public async getAllPosts() {
-    const posts = await Post.query()
-      .preload('user', (query) => {})
-      .orderBy('postCreatedAt', 'desc')
+  public async getAllPosts(current_user_email: string) {
+    const posts = await Post.query().preload('user').orderBy('postCreatedAt', 'desc')
 
-    return posts
+    // Add await here and provide proper default value
+    const currentUserInfo = (await User.query().where('email', current_user_email).first()) || {
+      userId: null,
+    }
+
+    const enhancedPosts = await Promise.all(
+      posts.map(async (post) => {
+        const likeInfo = await PostLike.query()
+          .where('postId', post.postId)
+          .count('*', 'totalLikes')
+          .first()
+
+        const last10Users = await PostLike.query()
+          .where('postId', post.postId)
+          .preload('user', (query) => {})
+          .orderBy('likedAt', 'desc')
+          .limit(10)
+
+        // Only check likes if we have a valid userId
+        let userLiked = null
+        if (currentUserInfo.userId) {
+          userLiked = await PostLike.query()
+            .where('postId', post.postId)
+            .andWhere('userId', currentUserInfo.userId)
+            .first()
+        }
+
+        const commentCount = await PostComment.query()
+          .where('postId', post.postId)
+          .count('*', 'total')
+          .first()
+
+        return {
+          ...post.serialize(),
+          totalLikes: likeInfo ? Number(likeInfo.$extras.totalLikes) : 0,
+          last10users: last10Users.map((like) => ({
+            email: like.user.email,
+            userId: like.user.userId,
+          })),
+          commentCount: commentCount ? Number(commentCount.$extras.total) : 0,
+          liked: !!userLiked,
+        }
+      })
+    )
+
+    return enhancedPosts
   }
 
   public async getPostLikes(postId: number) {
@@ -155,20 +216,30 @@ export default class PostQuery {
     // Fetch all comments on a specific post with user information
     const comments = await PostComment.query()
       .where('postId', postId)
-      .preload('user', (query) => {})
+      .preload('user')
+      .preload('replies')
       .orderBy('commentedAt', 'desc')
 
-    const result = comments.map((comment) => {
-      return {
-        commentId: comment.commentId,
-        postId: comment.postId,
-        userId: comment.userId,
-        commentText: comment.commentText,
-        commentedAt: comment.commentedAt,
-        isEdited: comment.isEdited,
-        userName: comment.user?.email || null, // optional chaining
-      }
-    })
+    const result = await Promise.all(
+      comments.map(async (comment) => {
+        const replyCount = await CommentReply.query()
+          .where('commentId', comment.commentId)
+          .count('* as total')
+          .first()
+
+        return {
+          commentId: comment.commentId,
+          postId: comment.postId,
+          userId: comment.userId,
+          commentText: comment.commentText,
+          commentedAt: comment.commentedAt,
+          isEdited: comment.isEdited,
+          userName: comment.user?.email || null,
+          totalReplies: replyCount ? Number(replyCount.$extras.total) : 0,
+        }
+      })
+    )
+
     return result
   }
 

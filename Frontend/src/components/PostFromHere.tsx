@@ -7,10 +7,16 @@ import { UserOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { useInitializeApp } from "./useInitializeApp";
 
-export default function PostFromHere() {
+export default function PostFromHere({
+  setOk,
+}: {
+  setOk: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
   const [postText, setPostText] = useState<string>("");
   const dispatch = useDispatch();
   const current_user = useSelector((state: stateStruct) => state.currentuser);
+
+  const allPost = useSelector((state: stateStruct) => state.allPost);
 
   // Initialize the app when component mounts
   useInitializeApp(dispatch);
@@ -32,24 +38,36 @@ export default function PostFromHere() {
           user_id: current_user.id,
           post_text: postText,
         }),
-      }).then((res) => {
-        if (res.ok) {
-          // Instead of calling the hook here, you should either:
-          // 1. Manually fetch the updated posts
-          // 2. Or trigger a state change that will cause the parent component to re-run useInitializeApp
+      })
+        .then((res) => res.json())
+        .then((res) => {
+          if (res.data) {
+            // Make sure the new post has all necessary properties
+            const newPost = {
+              ...res.data,
+              id: res.data.id || Date.now().toString(), // Ensure it has an ID
+              comments: [], // Initialize empty comments array
+              // Add any other properties needed by PernewsAndRecentComment
+            };
 
-          // Option 1: Manually fetch posts
-          fetch(`http://localhost:3333/posts`, {
-            method: "GET",
-          })
-            .then((response) => response.json())
-            .then((data) => {
-              dispatch(initializeAllPost(data.data));
-            });
-        }
-      });
+            // Add the new post to the beginning of allPost
+            dispatch(initializeAllPost([newPost, ...allPost]));
 
-      setPostText("");
+            // Trigger re-render of parent component
+            setOk((prev) => !prev);
+
+            // Clear the post text
+            setPostText("");
+          }
+        })
+        .catch((error) => {
+          console.error("Error creating post:", error);
+          Swal.fire({
+            title: "Error creating post",
+            text: "Please try again later",
+            icon: "error",
+          });
+        });
     }
   }
 

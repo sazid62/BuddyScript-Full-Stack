@@ -3,7 +3,6 @@ import { Post, stateStruct } from "../../interfaces/user_interface";
 import AllCommentShow from "../commentComponents/AllCommentShow";
 import PerComment from "../commentComponents/PerComment";
 
-
 interface PostExtends extends Post {
   show: boolean;
   handleShowCmnt: () => void;
@@ -20,7 +19,7 @@ export default function RecentComment(props: PostExtends) {
         <div className="_previous_comment">
           {props.show ? (
             <>
-              <AllCommentShow key={"idxComment"} {...props} />
+              <AllCommentShow {...props} />
               <button
                 onClick={props.handleShowCmnt}
                 type="button"

@@ -17,7 +17,7 @@ export default function LoginTemp() {
 
   const dispatch = useDispatch();
 
-  useInitializeApp(initializeAll);
+  useInitializeApp(1);
 
   const navigate = useNavigate();
   const current_user = useSelector((state: stateStruct) => state.currentuser);
@@ -47,7 +47,10 @@ export default function LoginTemp() {
       Swal.fire("Error", "Please fill in all fields", "error");
       return;
     }
-
+    if (formData.password.length < 2) {
+      Swal.fire("Error", "Password must be at least 2 characters", "error");
+      return;
+    }
     try {
       setIsSubmitting(true);
 

@@ -6,8 +6,10 @@ import { Button } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { AddLikeToComment } from "../features/login/Userslice";
 import conf from "../conf/conf";
+import { nanoid } from "@reduxjs/toolkit";
 
-export default function PerComment(props: any) {
+export default function PerComment({...props}: any) {
+  console.log(props);
   const dispatch = useDispatch();
   const {
     commentor_img,
@@ -16,7 +18,11 @@ export default function PerComment(props: any) {
     Replies,
     comment_id,
     like_comment_userList,
+    totalReplies,
   } = props;
+
+  const [showTotalReplies, setShowTotalReplies] =
+    useState<number>(totalReplies);
   const [reply, setReply] = useState<boolean>(false);
   const current_user = useSelector((state: stateStruct) => state.currentuser);
   const userLikedBefore = like_comment_userList.some(
@@ -24,34 +30,28 @@ export default function PerComment(props: any) {
   );
   const [allReplies, setAllReplies] = useState([]);
   const [like, setLike] = useState<boolean>(userLikedBefore);
-
-  // Fetch replies when component mounts or comment_id changes
   useEffect(() => {
-    const fetchReplies = async () => {
-      try {
-        const response = await fetch(
-          `${conf.apiUrl}/comments/${comment_id}/replies`,
-          {
-            method: "GET",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        const data = await response.json();
-        setAllReplies(data.data);
-      } catch (error) {
-        console.error("Error fetching replies:", error);
-      }
-    };
-
-    fetchReplies();
-
     setReply(false);
   }, [comment_id]);
-
+  useEffect(() => {
+    setShowTotalReplies(showTotalReplies);
+  }, [setShowTotalReplies]);
   function handleReply() {
+    if (!reply) {
+      fetch(`${conf.apiUrl}/comments/${comment_id}/replies`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          setAllReplies(data.data);
+          setShowTotalReplies(data.data.length);
+        });
+    }
+
     setReply(!reply);
   }
 
@@ -67,7 +67,10 @@ export default function PerComment(props: any) {
     );
   }
   return (
-    <div className="flex items-start space-x-4 p-4 border-b border-gray-100 bg-gray-100 rounded-2xl">
+    <div
+      key={comment_id}
+      className="flex items-start space-x-4 p-4 border-b border-gray-100 bg-gray-100 rounded-2xl"
+    >
       <div>
         <img
           src={commentor_img}
@@ -94,6 +97,8 @@ export default function PerComment(props: any) {
                 Hide Replies
               </Button>
               <ReplySection
+                showTotalReplies={showTotalReplies}
+                setShowTotalReplies={setShowTotalReplies}
                 {...props}
                 allReplies={allReplies}
                 setAllReplies={setAllReplies}
@@ -121,7 +126,7 @@ export default function PerComment(props: any) {
                 onClick={handleReply}
                 className="text-blue-600 text-sm hover:underline font-bold"
               >
-                {allReplies.length} Replies
+                {showTotalReplies} Replies
               </button>
             </div>
           )}

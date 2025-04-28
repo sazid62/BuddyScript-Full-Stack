@@ -13,11 +13,14 @@ import {
   commentIdValidator,
   replyIdValidator,
   deletepostPostValidator,
+  editpostPostValidator,
 } from './post_validator.js'
 import PostService from './post_service.js'
 import { inject } from '@adonisjs/core'
 import PostLike from '#models/post_like'
 import Post from '#models/post'
+import { current } from '@reduxjs/toolkit'
+import { current } from '@reduxjs/toolkit'
 
 @inject()
 export default class PostController {
@@ -31,7 +34,28 @@ export default class PostController {
       return response.ok({
         status: 'success',
         message: 'Posted your content!',
-        postCreated,
+        data: postCreated,
+      })
+    } catch (error) {
+      response.status(400).json({
+        status: 'error',
+        error: error.message,
+      })
+    }
+  }
+  public async editpost({ request, response }: HttpContext) {
+    try {
+      const payload = await request.validateUsing(editpostPostValidator)
+      const editedPost = await Post.query().where('postId', payload.postId).first()
+
+      editedPost.postText = payload.postText
+
+      await editedPost?.save()
+
+      return response.ok({
+        status: 'success',
+        message: 'Posted your content!',
+        data: editedPost,
       })
     } catch (error) {
       response.status(400).json({
@@ -190,9 +214,12 @@ export default class PostController {
   }
 
   // New methods for fetching data
-  public async getAllPosts({ response }: HttpContext) {
+  public async getAllPosts({ response, request }: HttpContext) {
+    const { current_user } = request.params()
+
+    const current_user_email = current_user
     try {
-      const posts = await this.postService.getAllPosts()
+      const posts = await this.postService.getAllPosts(current_user_email)
       return response.ok({
         status: 'success',
         message: 'Posts fetched successfully',

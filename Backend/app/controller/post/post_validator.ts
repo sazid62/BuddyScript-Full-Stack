@@ -7,6 +7,13 @@ export const createPostValidator = vine.compile(
     post_text: vine.string().maxLength(1000),
   })
 )
+export const editpostPostValidator = vine.compile(
+  vine.object({
+    postId: vine.number(),
+    userId: vine.number(),
+    postText: vine.string(),
+  })
+)
 
 export const likePostValidator = vine.compile(
   vine.object({
