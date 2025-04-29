@@ -225,12 +225,14 @@ export default class PostService {
     return await this.postQuery.dislikereplycomment(payload)
   }
 
-  public async getAllPosts(current_user_email: string) {
-    if (!current_user_email || current_user_email.trim() === '') {
+  public async getAllPosts(payload: { current_user: string; page_number: number }) {
+    const { current_user, page_number } = payload
+
+    if (!current_user || current_user.trim() === '') {
       throw new Exception('Valid user email is required')
     }
 
-    return await this.postQuery.getAllPosts(current_user_email)
+    return await this.postQuery.getAllPosts(payload)
   }
 
   public async getPostLikes(postId: number) {

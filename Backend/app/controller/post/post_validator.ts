@@ -78,6 +78,12 @@ export const dislikeReplyCommentPostValidator = vine.compile(
     userId: vine.number(),
   })
 )
+export const getAllPostsPostValidator = vine.compile(
+  vine.object({
+    current_user: vine.string().email(),
+    page_number: vine.number().optional(),
+  })
+)
 
 // New validators for data fetching
 export const postIdValidator = vine.compile(

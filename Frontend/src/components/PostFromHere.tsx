@@ -42,16 +42,13 @@ export default function PostFromHere({
         .then((res) => res.json())
         .then((res) => {
           if (res.data) {
-            // Make sure the new post has all necessary properties
             const newPost = {
               ...res.data,
-              id: res.data.id || Date.now().toString(), // Ensure it has an ID
-              comments: [], // Initialize empty comments array
-              // Add any other properties needed by PernewsAndRecentComment
+              id: res.data.id || Date.now().toString(),
+              comments: [],
             };
 
-            // Add the new post to the beginning of allPost
-            dispatch(initializeAllPost([newPost, ...allPost]));
+            dispatch(initializeAllPost([newPost, ...allPost.slice(0, -1)]));
 
             // Trigger re-render of parent component
             setOk((prev) => !prev);
@@ -61,7 +58,6 @@ export default function PostFromHere({
           }
         })
         .catch((error) => {
-          console.error("Error creating post:", error);
           Swal.fire({
             title: "Error creating post",
             text: "Please try again later",

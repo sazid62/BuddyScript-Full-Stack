@@ -161,12 +161,17 @@ export default class PostQuery {
     }
   }
 
-  public async getAllPosts(current_user_email: string) {
+  public async getAllPosts(payload: { current_user: string; page_number: number }) {
+    const { current_user, page_number } = payload
+
     try {
-      const posts = await Post.query().preload('user').orderBy('postCreatedAt', 'desc')
+      const posts = await Post.query()
+        .preload('user')
+        .orderBy('postCreatedAt', 'desc')
+        .paginate(page_number, 2)
 
       // Get current user info first
-      const currentUserInfo = await User.query().where('email', current_user_email).first()
+      const currentUserInfo = await User.query().where('email', current_user).first()
       const currentUserId = currentUserInfo?.userId || null
 
       const enhancedPosts = await Promise.all(

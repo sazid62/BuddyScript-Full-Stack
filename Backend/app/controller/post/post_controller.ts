@@ -14,6 +14,7 @@ import {
   replyIdValidator,
   deletepostPostValidator,
   editpostPostValidator,
+  getAllPostsPostValidator,
 } from './post_validator.js'
 import PostService from './post_service.js'
 import { inject } from '@adonisjs/core'
@@ -233,15 +234,15 @@ export default class PostController {
 
   public async getAllPosts({ response, request }: HttpContext) {
     try {
-      const { current_user } = request.params()
-      if (!current_user) {
+      const payload = await request.validateUsing(getAllPostsPostValidator)
+      if (!payload?.current_user) {
         return response.status(400).json({
           status: 'error',
           messages: 'Current user is required',
         })
       }
 
-      const posts = await this.postService.getAllPosts(current_user)
+      const posts = await this.postService.getAllPosts(payload)
       return response.ok({
         status: 'success',
         message: 'Posts fetched successfully',

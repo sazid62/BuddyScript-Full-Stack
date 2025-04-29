@@ -41,12 +41,17 @@ export const useInitializeApp = (shouldInitialize) => {
           );
 
           // fetch posts
-          const postsResponse = await fetch(
-            `http://localhost:3333/${userData.email}/posts`,
-            {
-              method: "GET",
-            }
-          );
+          const postsResponse = await fetch(`http://localhost:3333/posts`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              current_user: userData.email,
+              page_number: 1,
+            }),
+          });
           const allPost = await postsResponse.json();
           dispatch(initializeAllPost(allPost.data));
           navigate("/home");
