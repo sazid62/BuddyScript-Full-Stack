@@ -4,7 +4,14 @@ build
 tmp
 
 # Secrets
+<<<<<<< HEAD
 
+=======
+# .env
+# .env.local
+# .env.production.local
+# .env.development.local
+>>>>>>> 8ec4eb21908d8a0ac21881cf17c6630163399150
 
 # Frontend assets compiled code
 public/assets
