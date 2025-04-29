@@ -55,7 +55,7 @@ export default function RecentComment({
               ) : allComment.length > 3 && !showAllComment ? (
                 <p>View {allComment.length - 3} previous comments</p>
               ) : (
-                <p>See Recent Comments</p>
+                <p>Recent Comments</p>
               )}
             </button>
           )}

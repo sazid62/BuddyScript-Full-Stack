@@ -21,9 +21,17 @@ export const useInitializeApp = (shouldInitialize) => {
           },
           credentials: "include",
         });
-        const userData = await userResponse.json();
 
-        if (!userData.errors) {
+        const userData = await userResponse.json();
+        if (userData.errors && window.location.pathname == "/home") {
+          navigate("/");
+          return;
+        }
+        if (!userData.errors && window.location.pathname !== "/home") {
+          navigate("/home");
+          return;
+        }
+        if (!userData.errors && window.location.pathname === "/home") {
           // initialize user
           dispatch(
             initializeUser({

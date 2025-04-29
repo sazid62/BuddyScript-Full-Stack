@@ -6,10 +6,8 @@ import CommentReply from '#models/comment_reply'
 import CommentLike from '#models/coment_like'
 import CommentRepliesLike from '#models/comment_replies_likes'
 import db from '@adonisjs/lucid/services/db'
-import { current } from '@reduxjs/toolkit'
 
 export default class PostQuery {
-  // Existing methods
   public async createPost(payload: { user_id: number; post_text: string }) {
     const newPost = new Post()
     newPost.userId = payload.user_id
@@ -17,14 +15,33 @@ export default class PostQuery {
 
     await newPost.save()
 
-    const post = await Post.query().where('post_id', newPost.postId).preload('user').firstOrFail() // ✅ Get a single post, not an array
+    const post = await Post.query().where('post_id', newPost.postId).preload('user').firstOrFail()
 
     return {
-      ...post.serialize(), // ✅ serialize() to convert into a plain object
+      ...post.serialize(),
       totalLikes: 0,
       last10users: [],
       commentCount: 0,
       liked: false,
+    }
+  }
+
+  public async editPost(payload: { postId: number; userId: number; postText: string }) {
+    const post = await Post.query().where('post_id', payload.postId).first()
+
+    if (post) {
+      post.postText = payload.postText
+      await post.save()
+    }
+
+    return post
+  }
+
+  public async deletePost(payload: { userId: number; postId: number }) {
+    await Post.query().where('post_id', payload.postId).where('user_id', payload.userId).delete()
+
+    return {
+      message: 'Post deleted successfully',
     }
   }
 
@@ -37,10 +54,20 @@ export default class PostQuery {
     return payload
   }
 
-  public async dislikePost(payload: { post_id: number }) {
-    await PostLike.query().where('postId', payload.post_id).delete()
+  public async isLiked(postId: number, userId: number) {
+    const like = await PostLike.query().where('postId', postId).where('userId', userId).first()
+
+    return like ? true : false
+  }
+
+  public async dislikePost(payload: { post_id: number; user_id: number }) {
+    await PostLike.query()
+      .where('postId', payload.post_id)
+      .where('userId', payload.user_id)
+      .delete()
+
     return {
-      messages: 'Deleted Succesfully',
+      messages: 'Deleted Successfully',
     }
   }
 
@@ -53,16 +80,6 @@ export default class PostQuery {
 
     const userName = await User.query().where('user_id', payload.userId).first()
 
-    //   {
-    //     "commentId": 796,
-    //     "postId": 281,
-    //     "userId": 115,
-    //     "commentText": "2222222222",
-    //     "commentedAt": "2025-04-27T11:32:11.000+00:00",
-    //     "isEdited": 0,
-    //     "userName": "aaaaa@gmail.com",
-    //     "totalReplies": 0
-    // },
     return {
       userId: newComment.userId,
       postId: newComment.postId,
@@ -82,22 +99,24 @@ export default class PostQuery {
     newReply.replyText = payload.replyText
     await newReply.save()
 
-    return newReply
+    // Load user info for the reply
+    const reply = await CommentReply.query()
+      .where('reply_id', newReply.replyId)
+      .preload('user')
+      .first()
+
+    return reply
   }
 
   public async dislikeComment(payload: { commentId: number; userId: number }) {
-    const commentLikeExist = await CommentLike.query()
+    const commentLike = await CommentLike.query()
       .where('commentId', payload.commentId)
       .where('userId', payload.userId)
       .first()
 
-    if (!commentLikeExist) {
-      return {
-        message: 'This comment like does not exist.',
-      }
+    if (commentLike) {
+      await commentLike.delete()
     }
-
-    await commentLikeExist.delete()
 
     return {
       message: 'Comment disliked successfully.',
@@ -121,97 +140,109 @@ export default class PostQuery {
     newReplyLikeOnComment.userId = payload.userId
     newReplyLikeOnComment.replyId = payload.replyId
     await newReplyLikeOnComment.save()
+
     return {
-      messages: 'Liked Reply Comment Succesfully',
+      messages: 'Liked Reply Comment Successfully',
     }
   }
 
   public async dislikereplycomment(payload: { replyId: number; userId: number }) {
-    const newReplydislikeOnComment = await CommentRepliesLike.query()
+    const likeToRemove = await CommentRepliesLike.query()
       .where('replyId', payload.replyId)
       .where('userId', payload.userId)
       .first()
 
-    await newReplydislikeOnComment.delete()
+    if (likeToRemove) {
+      await likeToRemove.delete()
+    }
+
     return {
-      messages: 'Disliked Reply Comment Succesfully',
+      messages: 'Disliked Reply Comment Successfully',
     }
   }
 
   public async getAllPosts(current_user_email: string) {
-    const posts = await Post.query().preload('user').orderBy('postCreatedAt', 'desc')
+    try {
+      const posts = await Post.query().preload('user').orderBy('postCreatedAt', 'desc')
 
-    // Add await here and provide proper default value
-    const currentUserInfo = (await User.query().where('email', current_user_email).first()) || {
-      userId: null,
-    }
+      // Get current user info first
+      const currentUserInfo = await User.query().where('email', current_user_email).first()
+      const currentUserId = currentUserInfo?.userId || null
 
-    const enhancedPosts = await Promise.all(
-      posts.map(async (post) => {
-        const likeInfo = await PostLike.query()
-          .where('postId', post.postId)
-          .count('*', 'totalLikes')
-          .first()
-
-        const last10Users = await PostLike.query()
-          .where('postId', post.postId)
-          .preload('user', (query) => {})
-          .orderBy('likedAt', 'desc')
-          .limit(10)
-
-        // Only check likes if we have a valid userId
-        let userLiked = null
-        if (currentUserInfo.userId) {
-          userLiked = await PostLike.query()
+      const enhancedPosts = await Promise.all(
+        posts.map(async (post) => {
+          // Get like count
+          const likeInfo = await PostLike.query()
             .where('postId', post.postId)
-            .andWhere('userId', currentUserInfo.userId)
+            .count('*', 'totalLikes')
             .first()
-        }
 
-        const commentCount = await PostComment.query()
-          .where('postId', post.postId)
-          .count('*', 'total')
-          .first()
+          // Get recent likers
+          const last10Users = await PostLike.query()
+            .where('postId', post.postId)
+            .preload('user')
+            .orderBy('likedAt', 'desc')
+            .limit(10)
 
-        return {
-          ...post.serialize(),
-          totalLikes: likeInfo ? Number(likeInfo.$extras.totalLikes) : 0,
-          last10users: last10Users.map((like) => ({
-            email: like.user.email,
-            userId: like.user.userId,
-          })),
-          commentCount: commentCount ? Number(commentCount.$extras.total) : 0,
-          liked: !!userLiked,
-        }
-      })
-    )
+          // Check if current user liked this post
+          let userLiked = false
+          if (currentUserId) {
+            const userLike = await PostLike.query()
+              .where('postId', post.postId)
+              .where('userId', currentUserId)
+              .first()
 
-    return enhancedPosts
+            userLiked = !!userLike
+          }
+
+          // Get comment count
+          const commentCount = await PostComment.query()
+            .where('postId', post.postId)
+            .count('*', 'total')
+            .first()
+
+          return {
+            ...post.serialize(),
+            totalLikes: likeInfo ? Number(likeInfo.$extras.totalLikes) : 0,
+            last10users: last10Users.map((like) => ({
+              email: like.user.email,
+              userId: like.user.userId,
+            })),
+            commentCount: commentCount ? Number(commentCount.$extras.total) : 0,
+            liked: userLiked,
+          }
+        })
+      )
+
+      return enhancedPosts
+    } catch (error) {
+      throw new Error(`Failed to fetch posts: ${error.message}`)
+    }
   }
 
   public async getPostLikes(postId: number) {
-    const totalLikes = await PostLike.query().where('postId', postId).count('*', 'total').first()
-    // console.log(totalLikes, 'sajid')
+    try {
+      const totalLikes = await PostLike.query().where('postId', postId).count('*', 'total').first()
 
-    const latestLikes = await PostLike.query()
-      .where('postId', postId)
-      .preload('user', (query) => {
-        // query.select('user_id', 'email')
-      })
-      .orderBy('likedAt', 'desc')
-      .limit(10)
+      const latestLikes = await PostLike.query()
+        .where('postId', postId)
+        .preload('user')
+        .orderBy('likedAt', 'desc')
+        .limit(10)
 
-    // Format the response
-    const userNames = latestLikes.map((like) => ({
-      email: like.user.email,
-    }))
+      // Format the response
+      const userNames = latestLikes.map((like) => ({
+        email: like.user.email,
+      }))
 
-    return {
-      last10users: userNames,
-      totalLikes: totalLikes ? Number(totalLikes.$extras.total) : 0,
+      return {
+        last10users: userNames,
+        totalLikes: totalLikes ? Number(totalLikes.$extras.total) : 0,
+      }
+    } catch (error) {
+      throw new Error(`Failed to fetch post likes: ${error.message}`)
     }
   }
-
   public async getPostComments(postId: number) {
     // Fetch all comments on a specific post with user information
     const comments = await PostComment.query()

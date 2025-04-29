@@ -17,16 +17,11 @@ import {
 } from './post_validator.js'
 import PostService from './post_service.js'
 import { inject } from '@adonisjs/core'
-import PostLike from '#models/post_like'
-import Post from '#models/post'
-import { current } from '@reduxjs/toolkit'
-import { current } from '@reduxjs/toolkit'
 
 @inject()
 export default class PostController {
   constructor(protected postService: PostService) {}
 
-  // Existing methods
   public async createPost({ request, response }: HttpContext) {
     try {
       const payload = await request.validateUsing(createPostValidator)
@@ -37,44 +32,40 @@ export default class PostController {
         data: postCreated,
       })
     } catch (error) {
-      response.status(400).json({
+      return response.status(400).json({
         status: 'error',
         error: error.message,
       })
     }
   }
+
   public async editpost({ request, response }: HttpContext) {
     try {
       const payload = await request.validateUsing(editpostPostValidator)
-      const editedPost = await Post.query().where('postId', payload.postId).first()
-
-      editedPost.postText = payload.postText
-
-      await editedPost?.save()
-
+      const editedPost = await this.postService.editPost(payload)
       return response.ok({
         status: 'success',
-        message: 'Posted your content!',
+        message: 'Post updated successfully!',
         data: editedPost,
       })
     } catch (error) {
-      response.status(400).json({
+      return response.status(400).json({
         status: 'error',
         error: error.message,
       })
     }
   }
+
   public async deletepost({ request, response }: HttpContext) {
     try {
       const payload = await request.validateUsing(deletepostPostValidator)
-      const { userId, postId } = payload
-      await Post.query().where('post_id', postId).where('user_id', userId).delete()
+      await this.postService.deletePost(payload)
       return response.ok({
         status: 'success',
-        message: 'successfully Deleted Post',
+        message: 'Successfully deleted post',
       })
     } catch (error) {
-      response.status(400).json({
+      return response.status(400).json({
         status: 'error',
         error: error.message,
       })
@@ -85,7 +76,11 @@ export default class PostController {
     try {
       const payload = await request.validateUsing(likePostValidator)
       const data = await this.postService.likePost(payload)
-      return response.ok({ status: 'success', message: 'Post liked suceefull!', data })
+      return response.ok({
+        status: 'success',
+        message: 'Post liked successfully!',
+        data,
+      })
     } catch (error) {
       return response.status(400).json({
         status: 'error',
@@ -93,16 +88,39 @@ export default class PostController {
       })
     }
   }
+
   public async isliked({ request, response }: HttpContext) {
-    const { postId, userId } = request.body()
-    return await PostLike.query().where('post_id', postId).where('user_id', userId).first()
+    try {
+      const { postId, userId } = request.body()
+      if (!postId || !userId) {
+        return response.status(400).json({
+          status: 'error',
+          messages: 'Post ID and User ID are required',
+        })
+      }
+
+      const result = await this.postService.isLiked(postId, userId)
+      return response.ok({
+        status: 'success',
+        data: result,
+      })
+    } catch (error) {
+      return response.status(400).json({
+        status: 'error',
+        messages: error.message,
+      })
+    }
   }
 
   public async dislikePost({ request, response }: HttpContext) {
     try {
       const payload = await request.validateUsing(dislikePostValidator)
       const data = await this.postService.dislikePost(payload)
-      return response.ok({ status: 'success', message: 'Post Disliked suceefull!', data })
+      return response.ok({
+        status: 'success',
+        message: 'Post disliked successfully!',
+        data,
+      })
     } catch (error) {
       return response.status(400).json({
         status: 'error',
@@ -117,7 +135,7 @@ export default class PostController {
       const data = await this.postService.commentPost(payload)
       return response.ok({
         status: 'success',
-        message: 'Comment added Succesfully',
+        message: 'Comment added successfully',
         data,
       })
     } catch (error) {
@@ -134,7 +152,7 @@ export default class PostController {
       const data = await this.postService.replyComment(payload)
       return response.ok({
         status: 'success',
-        message: 'You reply a comment  Succesfully',
+        message: 'You replied to a comment successfully',
         data,
       })
     } catch (error) {
@@ -151,7 +169,7 @@ export default class PostController {
       const data = await this.postService.likeComment(payload)
       return response.ok({
         status: 'success',
-        message: 'You liked a commment successfully',
+        message: 'You liked a comment successfully',
         data,
       })
     } catch (error) {
@@ -168,7 +186,7 @@ export default class PostController {
       const data = await this.postService.dislikeComment(payload)
       return response.ok({
         status: 'success',
-        message: 'You disliked a commment successfully',
+        message: 'You disliked a comment successfully',
         data,
       })
     } catch (error) {
@@ -185,7 +203,7 @@ export default class PostController {
       const data = await this.postService.likereplycomment(payload)
       return response.ok({
         status: 'success',
-        message: 'You liked a reply commment successfully',
+        message: 'You liked a reply comment successfully',
         data,
       })
     } catch (error) {
@@ -202,7 +220,7 @@ export default class PostController {
       const data = await this.postService.dislikereplycomment(payload)
       return response.ok({
         status: 'success',
-        message: 'You disliked a reply commment successfully',
+        message: 'You disliked a reply comment successfully',
         data,
       })
     } catch (error) {
@@ -213,13 +231,17 @@ export default class PostController {
     }
   }
 
-  // New methods for fetching data
   public async getAllPosts({ response, request }: HttpContext) {
-    const { current_user } = request.params()
-
-    const current_user_email = current_user
     try {
-      const posts = await this.postService.getAllPosts(current_user_email)
+      const { current_user } = request.params()
+      if (!current_user) {
+        return response.status(400).json({
+          status: 'error',
+          messages: 'Current user is required',
+        })
+      }
+
+      const posts = await this.postService.getAllPosts(current_user)
       return response.ok({
         status: 'success',
         message: 'Posts fetched successfully',
@@ -236,6 +258,13 @@ export default class PostController {
   public async getPostLikes({ params, response }: HttpContext) {
     try {
       const postId = Number(params.postId)
+      if (isNaN(postId) || postId <= 0) {
+        return response.status(400).json({
+          status: 'error',
+          messages: 'Valid post ID is required',
+        })
+      }
+
       const likes = await this.postService.getPostLikes(postId)
       return response.ok({
         status: 'success',
@@ -253,6 +282,13 @@ export default class PostController {
   public async getPostComments({ params, response }: HttpContext) {
     try {
       const postId = Number(params.postId)
+      if (isNaN(postId) || postId <= 0) {
+        return response.status(400).json({
+          status: 'error',
+          messages: 'Valid post ID is required',
+        })
+      }
+
       const comments = await this.postService.getPostComments(postId)
       return response.ok({
         status: 'success',
@@ -270,6 +306,13 @@ export default class PostController {
   public async getCommentReplies({ params, response }: HttpContext) {
     try {
       const commentId = Number(params.commentId)
+      if (isNaN(commentId) || commentId <= 0) {
+        return response.status(400).json({
+          status: 'error',
+          messages: 'Valid comment ID is required',
+        })
+      }
+
       const replies = await this.postService.getCommentReplies(commentId)
       return response.ok({
         status: 'success',
@@ -287,6 +330,13 @@ export default class PostController {
   public async getReplyLikes({ params, response }: HttpContext) {
     try {
       const replyId = Number(params.replyId)
+      if (isNaN(replyId) || replyId <= 0) {
+        return response.status(400).json({
+          status: 'error',
+          messages: 'Valid reply ID is required',
+        })
+      }
+
       const likes = await this.postService.getReplyLikes(replyId)
       return response.ok({
         status: 'success',
@@ -304,6 +354,13 @@ export default class PostController {
   public async getCommentLikes({ params, response }: HttpContext) {
     try {
       const commentId = Number(params.commentId)
+      if (isNaN(commentId) || commentId <= 0) {
+        return response.status(400).json({
+          status: 'error',
+          messages: 'Valid comment ID is required',
+        })
+      }
+
       const likes = await this.postService.getCommentLikes(commentId)
       return response.ok({
         status: 'success',

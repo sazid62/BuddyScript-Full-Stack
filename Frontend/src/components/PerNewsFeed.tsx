@@ -129,6 +129,7 @@ export default function PerNewsFeed(props: PostExtends) {
         } else {
           await axios.post("http://localhost:3333/dislikepost", {
             post_id: props.postId,
+            user_id: current_user.id,
           });
 
           // Update like info in Redux store
@@ -459,7 +460,11 @@ export default function PerNewsFeed(props: PostExtends) {
               <p className="_feed_inner_timeline_total_reacts_para1">
                 <a href="#0">
                   {/* <span>{postInfo?.Comments.length}</span> Comment */}
-                  <span>{commentCount}</span> Comment
+                  <span>
+                    {commentCount >= 2
+                      ? `${commentCount} Comments`
+                      : `${commentCount} Comment`}
+                  </span>
                 </a>
               </p>
               <p className="_feed_inner_timeline_total_reacts_para2">
@@ -515,7 +520,6 @@ export default function PerNewsFeed(props: PostExtends) {
                 }
                 setClickOnCommentButton(!clickOnCommentButton);
 
-                console.log(clickOnCommentButton, "COmment");
                 props.handleShowCmnt;
               }}
               className="_feed_inner_timeline_reaction_comment _feed_reaction"

@@ -12,24 +12,13 @@ import HomePage from "./pages/HomePage";
 import { useSelector, useDispatch } from "react-redux";
 import { stateStruct } from "./interfaces/user_interface";
 import { useEffect } from "react";
-import { initializeAllPost, initializeUser } from "./features/login/Userslice"; // Update this path
-import initialize_whole_slice from "./components/useInitializeApp";
-import { useInitializeApp } from "./components/useInitializeApp";
+// import { initializeAllPost, initializeUser } from "./features/login/Userslice"; // Update this path
+// import initialize_whole_slice from "./components/useInitializeApp";
 
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
-  const current_user = useSelector((state: stateStruct) => state.currentuser);
-
-  // useInitializeApp(1);
-  // Redirect if not logged in
-  useEffect(() => {
-    // console.log(location.pathname, "path");
-    if (!current_user.email && location.pathname === "/home") {
-      navigate("/");
-    }
-  }, []);
 
   return (
     <>

@@ -16,12 +16,14 @@ export default function Regtemp() {
   const dispatch = useDispatch();
   const [initializeAll, setInititalizeAll] = useState(false);
 
-  const current_user = useSelector((state: stateStruct) => state.currentuser);
   const navigate = useNavigate();
   useInitializeApp(1);
-  if (current_user.email) {
-    navigate("/");
-  }
+  const current_user = useSelector((state: stateStruct) => state.currentuser);
+  useEffect(() => {
+    if (current_user.email) {
+      navigate("/home");
+    }
+  }, [current_user]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,7 +31,15 @@ export default function Regtemp() {
     const email = formData.get("email");
     const password = formData.get("password");
     const ref_pass = formData.get("rep_password");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+    if (!emailRegex.test(email)) {
+      Swal.fire({
+        title: "Invalid Email Address",
+        icon: "error",
+      });
+      return;
+    }
     if (password !== ref_pass) {
       Swal.fire({
         title: "Passwords don't match",

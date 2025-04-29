@@ -8,7 +8,7 @@ import { AddLikeToComment } from "../features/login/Userslice";
 import conf from "../conf/conf";
 import { nanoid } from "@reduxjs/toolkit";
 
-export default function PerComment({...props}: any) {
+export default function PerComment({ ...props }: any) {
   console.log(props);
   const dispatch = useDispatch();
   const {
@@ -126,7 +126,9 @@ export default function PerComment({...props}: any) {
                 onClick={handleReply}
                 className="text-blue-600 text-sm hover:underline font-bold"
               >
-                {showTotalReplies} Replies
+                {showTotalReplies >= 2
+                  ? `${showTotalReplies} replies`
+                  : `${showTotalReplies} reply`}
               </button>
             </div>
           )}

@@ -22,6 +22,9 @@ export default function LoginTemp() {
   const navigate = useNavigate();
   const current_user = useSelector((state: stateStruct) => state.currentuser);
 
+  const handLenavigate = () => {
+    navigate("/home");
+  };
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -49,6 +52,15 @@ export default function LoginTemp() {
     }
     if (formData.password.length < 2) {
       Swal.fire("Error", "Password must be at least 2 characters", "error");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(formData.email)) {
+      Swal.fire({
+        title: "Invalid Email Address",
+        icon: "error",
+      });
       return;
     }
     try {
@@ -84,11 +96,9 @@ export default function LoginTemp() {
   };
 
   // Redirect if already logged in
-  useEffect(() => {
-    if (current_user.id && current_user.email) {
-      navigate("/home");
-    }
-  }, [current_user, navigate]);
+  // useEffect(() => {
+  //   navigate("/home");
+  // }, []);
 
   return (
     <div>

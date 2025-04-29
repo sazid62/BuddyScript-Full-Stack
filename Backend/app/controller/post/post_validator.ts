@@ -31,6 +31,7 @@ export const deletepostPostValidator = vine.compile(
 export const dislikePostValidator = vine.compile(
   vine.object({
     post_id: vine.number(),
+    user_id: vine.number(),
   })
 )
 

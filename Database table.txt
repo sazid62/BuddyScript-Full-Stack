@@ -1,0 +1,109 @@
+Database Installation Instructions
+Follow these steps to set up the BuddyScript database for your project:
+
+Step 1: Install Required Software
+Install either:
+
+XAMPP (includes MySQL, Apache, and PHP)
+
+MySQL Workbench (standalone MySQL management tool)
+
+Step 2: Create the Database
+Launch your MySQL server (through XAMPP or MySQL Workbench)
+
+Create a new database named: BuddyScript
+
+Step 3: Execute SQL Tables
+Copy and execute the following SQL statements in your database:
+ 
+-- Users table
+CREATE TABLE `users` (
+  `user_id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `password` varchar(255) DEFAULT NULL,
+  `image` varchar(255) DEFAULT 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Posts table
+CREATE TABLE `posts` (
+  `post_id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `post_text` text,
+  `post_created_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`post_id`),
+  KEY `user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Post likes table
+CREATE TABLE `post_likes` (
+  `post_likes_id` int(11) NOT NULL AUTO_INCREMENT,
+  `post_id` int(11) DEFAULT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `liked_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`post_likes_id`),
+  UNIQUE KEY `unique_post_like` (`post_id`,`user_id`),
+  KEY `user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Post comments table
+CREATE TABLE `post_comments` (
+  `comment_id` int(11) NOT NULL AUTO_INCREMENT,
+  `post_id` int(11) DEFAULT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `comment_text` text,
+  `commented_at` datetime DEFAULT NULL,
+  `is_edited` tinyint(1) DEFAULT NULL,
+  PRIMARY KEY (`comment_id`),
+  KEY `post_id` (`post_id`),
+  KEY `user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Comment likes table
+CREATE TABLE `comment_likes` (
+  `comment_likes_id` int(11) NOT NULL AUTO_INCREMENT,
+  `comment_id` int(11) DEFAULT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `liked_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`comment_likes_id`),
+  UNIQUE KEY `unique_comment_like` (`comment_id`,`user_id`),
+  KEY `user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Comment replies table
+CREATE TABLE `comment_replies` (
+  `reply_id` int(11) NOT NULL AUTO_INCREMENT,
+  `comment_id` int(11) DEFAULT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `reply_text` text,
+  `replied_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `is_edited` tinyint(1) DEFAULT NULL,
+  PRIMARY KEY (`reply_id`),
+  KEY `comment_id` (`comment_id`),
+  KEY `user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Comment replies likes table
+CREATE TABLE `comment_replies_likes` (
+  `reply_like_id` int(11) NOT NULL AUTO_INCREMENT,
+  `reply_id` int(11) DEFAULT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `liked_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`reply_like_id`),
+  UNIQUE KEY `unique_reply_like` (`reply_id`,`user_id`),
+  KEY `user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+Verification
+After executing all the SQL statements:
+
+Verify all tables were created successfully
+
+Check that the database structure matches the requirements
+
+Congratulations! 🎉
+You have successfully set up the BuddyScript database. 
+
+ 

@@ -59,7 +59,9 @@ export default function PerComment(props: CommentWPostId) {
               onClick={handleReply}
               className="text-blue-600 text-sm hover:underline font-bold"
             >
-              {Replies.length} Replies
+              {Replies.length >= 2
+                ? `${Replies.length} replies`
+                : `${Replies.length} reply`}
             </button>
           ) : (
             <button
