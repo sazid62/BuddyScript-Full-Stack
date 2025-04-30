@@ -150,6 +150,17 @@ export default function PerNewsFeed(props: PostExtends) {
 
   // Hide post
   function Handlehide() {
+    fetch(`${conf.apiUrl}/ishidden`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        postId: props.postId,
+        userId: current_user.id,
+      }),
+    }).then((res) => res.json());
+
     dispatch(
       HidePost({
         postId: props.postId,
@@ -189,7 +200,6 @@ export default function PerNewsFeed(props: PostExtends) {
 
   // Submit edited post
   function handleEditSubmit(updatedText) {
-    console.log(updatedText, "UpdatedText");
     axios
       .post(`${conf.apiUrl}/editpost`, {
         postId: props.postId,
@@ -248,7 +258,7 @@ export default function PerNewsFeed(props: PostExtends) {
                     {timeAgoRef.current}{" "}
                     {/* Use the ref value instead of recalculating */}
                     <p className="text-blue-600 font-bold">
-                      {props.show ? "Private" : "Public"}
+                      {props.isHidden ? "Private" : "Public"}
                     </p>
                   </p>
                 </div>
@@ -350,7 +360,7 @@ export default function PerNewsFeed(props: PostExtends) {
                                 />
                               </svg>
                             </span>
-                            "hide"
+                            {props.isHidden ? "Public Post" : "Private Post"}
                           </button>
                         </li>
                         <li className="_feed_timeline_dropdown_item">

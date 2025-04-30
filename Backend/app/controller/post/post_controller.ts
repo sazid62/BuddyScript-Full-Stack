@@ -16,6 +16,7 @@ import {
   editpostPostValidator,
   getAllPostsPostValidator,
   getPostCommentsPostValidator,
+  isHiddenPostValidator,
 } from './post_validator.js'
 import PostService from './post_service.js'
 import { inject } from '@adonisjs/core'
@@ -370,6 +371,22 @@ export default class PostController {
         status: 'success',
         message: 'Comment likes fetched successfully',
         data: likes,
+      })
+    } catch (error) {
+      return response.status(400).json({
+        status: 'error',
+        messages: error.message,
+      })
+    }
+  }
+  public async isHidden({ params, response, request }: HttpContext) {
+    try {
+      const payload = await request.validateUsing(isHiddenPostValidator)
+      const data = await this.postService.isHidden(payload)
+      return response.ok({
+        status: 'success',
+        message: 'Change Privacy successfully',
+        data: data,
       })
     } catch (error) {
       return response.status(400).json({

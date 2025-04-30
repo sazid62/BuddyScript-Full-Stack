@@ -23,6 +23,7 @@ export default class PostQuery {
       last10users: [],
       commentCount: 0,
       liked: false,
+      isHidden: false,
     }
   }
 
@@ -67,7 +68,7 @@ export default class PostQuery {
       .delete()
 
     return {
-      messages: 'Deleted Successfully',
+      messages: 'Disliked Post Successfully',
     }
   }
 
@@ -99,7 +100,6 @@ export default class PostQuery {
     newReply.replyText = payload.replyText
     await newReply.save()
 
-    // Load user info for the reply
     const reply = await CommentReply.query()
       .where('reply_id', newReply.replyId)
       .preload('user')
@@ -167,29 +167,32 @@ export default class PostQuery {
     try {
       const posts = await Post.query()
         .preload('user')
+        .where((query) => {
+          query.where('isHidden', 0).orWhere((q) => {
+            q.where('isHidden', 1).whereHas('user', (userQuery) => {
+              userQuery.where('email', current_user)
+            })
+          })
+        })
         .orderBy('postCreatedAt', 'desc')
         .paginate(page_number, 5)
 
-      // Get current user info first
       const currentUserInfo = await User.query().where('email', current_user).first()
       const currentUserId = currentUserInfo?.userId || null
 
       const enhancedPosts = await Promise.all(
         posts.map(async (post) => {
-          // Get like count
           const likeInfo = await PostLike.query()
             .where('postId', post.postId)
             .count('*', 'totalLikes')
             .first()
 
-          // Get recent likers
           const last10Users = await PostLike.query()
             .where('postId', post.postId)
             .preload('user')
             .orderBy('likedAt', 'desc')
             .limit(10)
 
-          // Check if current user liked this post
           let userLiked = false
           if (currentUserId) {
             const userLike = await PostLike.query()
@@ -200,7 +203,6 @@ export default class PostQuery {
             userLiked = !!userLike
           }
 
-          // Get comment count
           const commentCount = await PostComment.query()
             .where('postId', post.postId)
             .count('*', 'total')
@@ -235,7 +237,6 @@ export default class PostQuery {
         .orderBy('likedAt', 'desc')
         .limit(10)
 
-      // Format the response
       const userNames = latestLikes.map((like) => ({
         email: like.user.email,
       }))
@@ -282,7 +283,6 @@ export default class PostQuery {
   }
 
   public async getCommentReplies(commentId: number) {
-    // Fetch all replies to a specific comment with user information
     const replies = await CommentReply.query()
       .where('commentId', commentId)
       .preload('user', (query) => {
@@ -294,13 +294,11 @@ export default class PostQuery {
   }
 
   public async getReplyLikes(replyId: number) {
-    // Get total count of likes on a reply comment
     const totalLikes = await CommentRepliesLike.query()
       .where('replyId', replyId)
       .count('*', 'total')
       .first()
 
-    // Get 10 latest users who liked the reply
     const latestLikes = await CommentRepliesLike.query()
       .where('replyId', replyId)
       .preload('user', (query) => {
@@ -309,7 +307,6 @@ export default class PostQuery {
       .orderBy('likedAt', 'desc')
       .limit(10)
 
-    // Format the response
     const userNames = latestLikes.map((like) => ({
       user_id: like.userId,
       name: like.user.name,
@@ -322,13 +319,11 @@ export default class PostQuery {
   }
 
   public async getCommentLikes(commentId: number) {
-    // Get total count of likes on a comment
     const totalLikes = await CommentLike.query()
       .where('commentId', commentId)
       .count('*', 'total')
       .first()
 
-    // Get 10 latest users who liked the comment
     const latestLikes = await CommentLike.query()
       .where('commentId', commentId)
       .preload('user', (query) => {
@@ -337,7 +332,6 @@ export default class PostQuery {
       .orderBy('likedAt', 'desc')
       .limit(10)
 
-    // Format the response
     const userNames = latestLikes.map((like) => ({
       user_id: like.userId,
       name: like.user.name,
@@ -347,5 +341,19 @@ export default class PostQuery {
       total_likes: totalLikes ? totalLikes.total : 0,
       latest_users: userNames,
     }
+  }
+  public async isHidden(payload: { postId: number; userId: number }) {
+    const post = await Post.query()
+      .where('post_id', payload.postId)
+      .where('user_id', payload.userId)
+      .first()
+
+    if (!post) {
+      throw new Error('Post not found or user not authorized')
+    }
+
+    post.isHidden = !post.isHidden
+    await post.save()
+    return post
   }
 }

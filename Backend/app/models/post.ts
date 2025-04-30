@@ -15,6 +15,9 @@ export default class Post extends BaseModel {
   @column()
   declare postText: string | null
 
+  @column()
+  declare isHidden: boolean
+
   @column.dateTime({ autoCreate: true })
   declare postCreatedAt: DateTime
 

@@ -17,12 +17,9 @@ export default class AuthService {
 
   public async loginUser(payload: { email: string; password: string }) {
     const userExist = await User.query().where('email', payload.email).first()
-    if (!userExist) {
-      throw new Exception('Email doesnt exist')
-    }
     const user = await this.authQuery.loginUser(payload)
-    if (!user) {
-      throw new Exception('Wrong Password')
+    if (!userExist || !user) {
+      throw new Exception('Authentication Failed')
     }
     return user
   }

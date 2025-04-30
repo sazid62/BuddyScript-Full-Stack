@@ -300,4 +300,19 @@ export default class PostService {
 
     return await this.postQuery.getCommentLikes(commentId)
   }
+  public async isHidden(payload: { postId: number; userId: number }) {
+    if (payload.userId <= 0 || payload.postId <= 0) {
+      throw new Exception('Valid ID is required')
+    }
+
+    const postExist = await Post.query()
+      .where('postId', payload.postId)
+      .where('userId', payload.userId)
+      .first()
+    if (!postExist) {
+      throw new Exception('Unauthorize action')
+    }
+
+    return await this.postQuery.isHidden(payload)
+  }
 }

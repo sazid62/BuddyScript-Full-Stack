@@ -40,6 +40,12 @@ export const getPostCommentsPostValidator = vine.compile(
     pageNumber: vine.number(),
   })
 )
+export const isHiddenPostValidator = vine.compile(
+  vine.object({
+    postId: vine.number(),
+    userId: vine.number(),
+  })
+)
 
 export const commentPostValidator = vine.compile(
   vine.object({
