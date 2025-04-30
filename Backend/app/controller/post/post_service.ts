@@ -248,17 +248,18 @@ export default class PostService {
     return await this.postQuery.getPostLikes(postId)
   }
 
-  public async getPostComments(postId: number) {
-    if (!postId || postId <= 0) {
+  public async getPostComments(payload: { postId: number; pageNumber: number }) {
+    console.log(payload)
+    if (!payload.postId || payload.postId <= 0) {
       throw new Exception('Valid post ID is required')
     }
 
-    const postExist = await Post.find(postId)
+    // return 1
+    const postExist = await Post.find(payload.postId)
     if (!postExist) {
       throw new Exception('Post not found')
     }
-
-    return await this.postQuery.getPostComments(postId)
+    return await this.postQuery.getPostComments(payload)
   }
 
   public async getCommentReplies(commentId: number) {

@@ -15,6 +15,7 @@ import {
   deletepostPostValidator,
   editpostPostValidator,
   getAllPostsPostValidator,
+  getPostCommentsPostValidator,
 } from './post_validator.js'
 import PostService from './post_service.js'
 import { inject } from '@adonisjs/core'
@@ -280,9 +281,11 @@ export default class PostController {
     }
   }
 
-  public async getPostComments({ params, response }: HttpContext) {
+  public async getPostComments({ request, params, response }: HttpContext) {
     try {
-      const postId = Number(params.postId)
+      const payload = await request.validateUsing(getPostCommentsPostValidator)
+      const postId = Number((await payload).postId)
+
       if (isNaN(postId) || postId <= 0) {
         return response.status(400).json({
           status: 'error',
@@ -290,7 +293,7 @@ export default class PostController {
         })
       }
 
-      const comments = await this.postService.getPostComments(postId)
+      const comments = await this.postService.getPostComments(payload)
       return response.ok({
         status: 'success',
         message: 'Post comments fetched successfully',

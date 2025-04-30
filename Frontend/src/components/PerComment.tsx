@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AddLikeToComment } from "../features/login/Userslice";
 import conf from "../conf/conf";
 import { nanoid } from "@reduxjs/toolkit";
+import { LikeFilled, LikeOutlined } from "@ant-design/icons";
 
 export default function PerComment({ ...props }: any) {
   console.log(props);
@@ -89,7 +90,16 @@ export default function PerComment({ ...props }: any) {
         <div className="mt-2">
           {reply ? (
             <>
-              <AllReply allReplies={allReplies} setAllReplies={setAllReplies} />
+              {allReplies.length >= 1 ? (
+                <AllReply
+                  allReplies={allReplies}
+                  setAllReplies={setAllReplies}
+                />
+              ) : (
+                <p className="text-gray-700 text-sm p-4 font-semibold italic">
+                  No replies yet
+                </p>
+              )}
               <Button
                 onClick={handleReply}
                 className="text-blue-600 text-sm font-medium hover:underline"
@@ -107,28 +117,34 @@ export default function PerComment({ ...props }: any) {
             </>
           ) : (
             <div className="flex flex-row gap-2">
-              <button
-                onClick={handleLike}
-                className={`text-blue-600 text-sm font-medium hover:underline ${
-                  like ? "font-bold" : "font-normal"
-                }`}
-              >
-                {props.like_comment_userList.length} {like ? "liked" : "like"}
-              </button>
-              <button
-                onClick={handleReply}
-                className="text-blue-600 text-sm font-medium hover:underline"
-              >
-                Reply
-              </button>
+              {like ? (
+                <button
+                  onClick={handleLike}
+                  className="text-blue-600 text-sm font-medium hover:underline"
+                >
+                  <LikeFilled style={{ fontSize: "15px" }} />
+                  Liked
+                </button>
+              ) : (
+                <button
+                  onClick={handleLike}
+                  className="text-blue-600 text-sm font-medium hover:underline"
+                >
+                  <LikeOutlined style={{ fontSize: "15px" }} />
+                  Like
+                </button>
+              )}
 
-              <button
-                onClick={handleReply}
-                className="text-blue-600 text-sm hover:underline font-bold"
-              >
+              <button onClick={handleReply} className="text-blue-600 text-sm  ">
                 {showTotalReplies >= 2
                   ? `${showTotalReplies} replies`
-                  : `${showTotalReplies} reply`}
+                  : showTotalReplies === 1
+                  ? `${showTotalReplies} reply`
+                  : "reply"}
+              </button>
+
+              <button className="text-blue-600 text-sm font-medium hover:underline">
+                share
               </button>
             </div>
           )}

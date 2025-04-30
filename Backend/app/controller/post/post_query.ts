@@ -168,7 +168,7 @@ export default class PostQuery {
       const posts = await Post.query()
         .preload('user')
         .orderBy('postCreatedAt', 'desc')
-        .paginate(page_number, 2)
+        .paginate(page_number, 5)
 
       // Get current user info first
       const currentUserInfo = await User.query().where('email', current_user).first()
@@ -248,13 +248,15 @@ export default class PostQuery {
       throw new Error(`Failed to fetch post likes: ${error.message}`)
     }
   }
-  public async getPostComments(postId: number) {
-    // Fetch all comments on a specific post with user information
+  public async getPostComments(payload: { postId: number; pageNumber: number }) {
+    const { postId, pageNumber } = payload
+
     const comments = await PostComment.query()
       .where('postId', postId)
       .preload('user')
       .preload('replies')
       .orderBy('commentedAt', 'desc')
+      .paginate(pageNumber, 5)
 
     const result = await Promise.all(
       comments.map(async (comment) => {

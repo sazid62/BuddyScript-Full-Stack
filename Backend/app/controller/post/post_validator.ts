@@ -34,6 +34,12 @@ export const dislikePostValidator = vine.compile(
     user_id: vine.number(),
   })
 )
+export const getPostCommentsPostValidator = vine.compile(
+  vine.object({
+    postId: vine.number(),
+    pageNumber: vine.number(),
+  })
+)
 
 export const commentPostValidator = vine.compile(
   vine.object({

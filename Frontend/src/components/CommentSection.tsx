@@ -65,7 +65,7 @@ export default function CommentSection({
         const updatedComments = [result.data, ...allComment];
 
         setAllComment(updatedComments);
-
+        dispatch(AddCommentCount({ postId: postData.postId }));
         setCommentCount(commentCount + 1);
         setComment("");
       })

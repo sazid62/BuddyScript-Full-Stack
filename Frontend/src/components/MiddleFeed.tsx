@@ -1,27 +1,34 @@
+import { useEffect, useState, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import DailyStatus from "./DailyStatus";
-// import MessengerCircle from "./MessengerCircle";
 import PostFromHere from "./PostFromHere";
-import { allPost, Post, stateStruct } from "../interfaces/user_interface";
+import { allPost, stateStruct } from "../interfaces/user_interface";
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect, useState } from "react";
 import PernewsAndRecentComment from "./PernewsAndRecentComment";
-import SeeMoreButton from "./SeeMoreButton";
 import conf from "../conf/conf";
-import { initializeAllPost, initializeUser } from "../features/login/Userslice";
+import { initializeAllPost } from "../features/login/Userslice";
+import { div } from "framer-motion/client";
 
 export default function MiddleFeed() {
-  const [ok, setOk] = useState<boolean>(false);
-  const allPosts = useSelector((state: stateStruct) => state.allPost) || [];
-  const currentUser = useSelector((state: stateStruct) => state.currentuser);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [ok, setOk] = useState(false);
+  const allPosts = useSelector((state) => state.allPost) || [];
+  const currentUser = useSelector((state) => state.currentuser);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch();
-  const [isEndAllPost, setIsEndAllPost] = useState<boolean>(false);
+  const [isEndAllPost, setIsEndAllPost] = useState(false);
+  const loadingRef = useRef(false);
+  const containerRef = useRef(null);
 
-  const handleLoadMorePosts = async () => {
+  const handleLoadMorePosts = useCallback(async () => {
+    if (loadingRef.current || isEndAllPost) return;
+
+    loadingRef.current = true;
+    setIsLoading(true);
+
     try {
-      setIsLoading(true);
-      const nextPage = currentPage + 1;
+      // If it's the first load, use page 1, otherwise increment
+      const pageToFetch = allPosts.length === 0 ? 1 : currentPage + 1;
 
       const response = await fetch(`${conf.apiUrl}/posts`, {
         method: "POST",
@@ -31,65 +38,73 @@ export default function MiddleFeed() {
         credentials: "include",
         body: JSON.stringify({
           current_user: currentUser.email,
-          page_number: nextPage,
+          page_number: pageToFetch,
         }),
       });
 
       const data = await response.json();
+
       if (data.data.length === 0) {
-        console.log(data.data, "data.data");
         setIsEndAllPost(true);
-      }
-      if (data.data && data.data.length > 0) {
-        setIsEndAllPost(false);
-        dispatch(initializeAllPost([...allPosts, ...data.data]));
-        setCurrentPage(nextPage);
+      } else {
+        if (allPosts.length === 0) {
+          dispatch(initializeAllPost(data.data));
+        } else {
+          dispatch(initializeAllPost([...allPosts, ...data.data]));
+        }
+        setCurrentPage(pageToFetch);
       }
     } catch (error) {
-      console.error("Failed to fetch more posts:", error);
+      console.error("Failed to fetch posts:", error);
     } finally {
+      loadingRef.current = false;
       setIsLoading(false);
     }
-  };
+  }, [currentPage, isEndAllPost, allPosts, currentUser.email, dispatch]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100;
+
+      if (isNearBottom && !loadingRef.current && !isEndAllPost) {
+        handleLoadMorePosts();
+      }
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [handleLoadMorePosts, isEndAllPost]);
 
   return (
     <div className="col-xl-6 col-lg-6 col-md-12 col-sm-12 m-auto">
-      <div className="_layout_middle_wrap _layout_middle_padding">
+      <div
+        className="_layout_middle_wrap _layout_middle_padding"
+        ref={containerRef}
+        style={{ overflowY: "auto", maxHeight: "100vh", position: "relative" }}
+      >
         <div className="_layout_middle_inner">
           <DailyStatus />
-
           <PostFromHere setOk={setOk} />
 
-          {isEndAllPost && (
-            <div className="flex justify-center m-3 mb-10 ">
-              <p className="text-gray-500">No more posts available</p>
-            </div>
-          )}
-
-          {allPosts.map((post: allPost, index: number) => (
-            <div key={post.postId}>
+          {allPosts.map((post) => (
+            <motion.div
+              key={post.postId}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
               <PernewsAndRecentComment {...post} />
-            </div>
+            </motion.div>
           ))}
-          {isEndAllPost && (
-            <div className="flex justify-center m-3 mb-10 ">
-              <p className="text-gray-500">No more posts available</p>
-            </div>
-          )}
-          {!isEndAllPost && allPosts.length > 0 && (
-            <SeeMoreButton
-              onClick={handleLoadMorePosts}
-              loading={isLoading}
-              buttonText="See More Posts"
-            />
-          )}
 
-          {!isEndAllPost && allPosts.length === 0 && (
-            <SeeMoreButton
-              onClick={handleLoadMorePosts}
-              loading={isLoading}
-              buttonText="Hmm its looks Like no posts are available, want to reload?"
-            />
+          {isEndAllPost && allPosts.length > 0 && (
+            <div className="p-4 font-semibold text-center text-gray-500">
+              No more Posts to load
+            </div>
           )}
         </div>
       </div>

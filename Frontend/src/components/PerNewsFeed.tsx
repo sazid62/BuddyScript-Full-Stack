@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { allPost, Post, stateStruct } from "../interfaces/user_interface";
 import { useDispatch, useSelector } from "react-redux";
-import { current } from "@reduxjs/toolkit";
 import {
   AddCommentCount,
   AddReact,
@@ -62,12 +61,12 @@ export default function PerNewsFeed(props: PostExtends) {
   const [newText, setNewtext] = useState<string>(props.postText);
   const [allComment, setAllComment] = useState([]);
   const [commentCount, setCommentCount] = useState(props.commentCount);
-  // Get current post data from Redux store
   const [clickedLikeButton, setClickedLikeButton] = useState<boolean>(
     props.liked
   );
 
-  // console.log(props, "props");
+  // Store the time display in a ref to prevent re-renders from updating it
+  const timeAgoRef = useRef(getTimeAgo(props.postCreatedAt));
 
   // Event handlers
   const handleButtonClick = () => {
@@ -227,7 +226,7 @@ export default function PerNewsFeed(props: PostExtends) {
       confirmButtonText: "Close",
     });
   };
-  // console.log(props, "PerPost ");
+
   return (
     <body key={props.postId}>
       <div>
@@ -240,16 +239,14 @@ export default function PerNewsFeed(props: PostExtends) {
                     src={`https://i.pravatar.cc/418?u= `}
                     className="_post_img"
                   />
-
-                  {/* <img src={post_user?.} alt="" className="_post_img" /> */}
                 </div>
                 <div className="_feed_inner_timeline_post_box_txt">
                   <h4 className="_feed_inner_timeline_post_box_title">
                     {props.user.email}
-                    {/* {post_user?.email.slice(0, post_user?.email.indexOf("@"))} */}
                   </h4>
                   <p className="_feed_inner_timeline_post_box_para flex flex-row">
-                    {getTimeAgo(props.postCreatedAt)}
+                    {timeAgoRef.current}{" "}
+                    {/* Use the ref value instead of recalculating */}
                     <p className="text-blue-600 font-bold">
                       {props.show ? "Private" : "Public"}
                     </p>
@@ -278,7 +275,6 @@ export default function PerNewsFeed(props: PostExtends) {
                   </button>
                 </div>
                 {/* drop down soro */}
-                {/* <button >Tggle Dropdown</button> */}
                 <div
                   ref={dropdownRef}
                   id="_notify_drop"
@@ -299,9 +295,9 @@ export default function PerNewsFeed(props: PostExtends) {
                           >
                             <path
                               stroke="#1890FF"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="1.2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="1.2"
                               d="M14.25 15.75L9 12l-5.25 3.75v-12a1.5 1.5 0 011.5-1.5h7.5a1.5 1.5 0 011.5 1.5v12z"
                             />
                           </svg>
@@ -321,9 +317,9 @@ export default function PerNewsFeed(props: PostExtends) {
                           >
                             <path
                               fill="#377DFF"
-                              fill-rule="evenodd"
+                              fillRule="evenodd"
                               d="M7.547 19.55c.533.59 1.218.915 1.93.915.714 0 1.403-.324 1.938-.916a.777.777 0 011.09-.056c.318.284.344.77.058 1.084-.832.917-1.927 1.423-3.086 1.423h-.002c-1.155-.001-2.248-.506-3.077-1.424a.762.762 0 01.057-1.083.774.774 0 011.092.057zM9.527 0c4.58 0 7.657 3.543 7.657 6.85 0 1.702.436 2.424.899 3.19.457.754.976 1.612.976 3.233-.36 4.14-4.713 4.478-9.531 4.478-4.818 0-9.172-.337-9.528-4.413-.003-1.686.515-2.544.973-3.299l.161-.27c.398-.679.737-1.417.737-2.918C1.871 3.543 4.948 0 9.528 0zm0 1.535c-3.6 0-6.11 2.802-6.11 5.316 0 2.127-.595 3.11-1.12 3.978-.422.697-.755 1.247-.755 2.444.173 1.93 1.455 2.944 7.986 2.944 6.494 0 7.817-1.06 7.988-3.01-.003-1.13-.336-1.681-.757-2.378-.526-.868-1.12-1.851-1.12-3.978 0-2.514-2.51-5.316-6.111-5.316z"
-                              clip-rule="evenodd"
+                              clipRule="evenodd"
                             />
                           </svg>
                         </span>
@@ -347,14 +343,13 @@ export default function PerNewsFeed(props: PostExtends) {
                               >
                                 <path
                                   stroke="#1890FF"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="1.2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="1.2"
                                   d="M14.25 2.25H3.75a1.5 1.5 0 00-1.5 1.5v10.5a1.5 1.5 0 001.5 1.5h10.5a1.5 1.5 0 001.5-1.5V3.75a1.5 1.5 0 00-1.5-1.5zM6.75 6.75l4.5 4.5M11.25 6.75l-4.5 4.5"
                                 />
                               </svg>
                             </span>
-                            {/* {props.isHidden ? "unhide" : "hide"} */}
                             "hide"
                           </button>
                         </li>
@@ -373,16 +368,16 @@ export default function PerNewsFeed(props: PostExtends) {
                               >
                                 <path
                                   stroke="#1890FF"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="1.2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="1.2"
                                   d="M8.25 3H3a1.5 1.5 0 00-1.5 1.5V15A1.5 1.5 0 003 16.5h10.5A1.5 1.5 0 0015 15V9.75"
                                 />
                                 <path
                                   stroke="#1890FF"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="1.2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="1.2"
                                   d="M13.875 1.875a1.591 1.591 0 112.25 2.25L9 11.25 6 12l.75-3 7.125-7.125z"
                                 />
                               </svg>
@@ -406,9 +401,9 @@ export default function PerNewsFeed(props: PostExtends) {
                               >
                                 <path
                                   stroke="#1890FF"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="1.2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="1.2"
                                   d="M2.25 4.5h13.5M6 4.5V3a1.5 1.5 0 011.5-1.5h3A1.5 1.5 0 0112 3v1.5m2.25 0V15a1.5 1.5 0 01-1.5 1.5h-7.5a1.5 1.5 0 01-1.5-1.5V4.5h10.5zM7.5 8.25v4.5M10.5 8.25v4.5"
                                 />
                               </svg>
@@ -459,7 +454,6 @@ export default function PerNewsFeed(props: PostExtends) {
             <div className="_feed_inner_timeline_total_reacts_txt">
               <p className="_feed_inner_timeline_total_reacts_para1">
                 <a href="#0">
-                  {/* <span>{postInfo?.Comments.length}</span> Comment */}
                   <span>
                     {commentCount >= 2
                       ? `${commentCount} Comments`
@@ -504,12 +498,16 @@ export default function PerNewsFeed(props: PostExtends) {
             <button
               onClick={() => {
                 if (!clickOnCommentButton) {
-                  fetch(`${conf.apiUrl}/posts/${props.postId}/comments`, {
-                    method: "GET",
+                  fetch(`${conf.apiUrl}/posts/comments`, {
+                    method: "POST",
                     credentials: "include",
                     headers: {
                       "Content-Type": "application/json",
                     },
+                    body: JSON.stringify({
+                      postId: props.postId,
+                      pageNumber: 1,
+                    }),
                   })
                     .then((res) => res.json())
                     .then((data) => {
@@ -545,8 +543,8 @@ export default function PerNewsFeed(props: PostExtends) {
                     />
                     <path
                       stroke="#000"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                       d="M6.938 9.313h7.125M10.5 14.063h3.563"
                     />
                   </svg>
@@ -568,7 +566,7 @@ export default function PerNewsFeed(props: PostExtends) {
                   >
                     <path
                       stroke="#000"
-                      stroke-linejoin="round"
+                      strokeLinejoin="round"
                       d="M23 10.5L12.917 1v5.429C3.267 6.429 1 13.258 1 20c2.785-3.52 5.248-5.429 11.917-5.429V20L23 10.5z"
                     />
                   </svg>
