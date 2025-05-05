@@ -41,11 +41,15 @@ export default function ReplySection({
     console.log(props, "CurrentProps");
 
     axios
-      .post(`${conf.apiUrl}/replycomment`, {
-        commentId: props.comment_id,
-        userId: current_user.id,
-        replyText: replyText,
-      })
+      .post(
+        `${conf.apiUrl}/replycomment`,
+        {
+          commentId: props.comment_id,
+          userId: current_user.id,
+          replyText: replyText,
+        },
+        { withCredentials: true }
+      )
       .then((res) => {
         console.log(allReplies, "allreplies");
         console.log(res.data, "reData");

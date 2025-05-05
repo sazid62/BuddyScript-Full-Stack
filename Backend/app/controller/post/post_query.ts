@@ -162,71 +162,51 @@ export default class PostQuery {
   }
 
   public async getAllPosts(payload: { current_user: string; page_number: number }) {
-    const { current_user, page_number } = payload
-
+    console.log(payload)
     try {
+      const current_user_id = await User.query().where('email', payload.current_user).firstOrFail()
       const posts = await Post.query()
-        .preload('user')
-        .where((query) => {
-          query.where('isHidden', 0).orWhere((q) => {
-            q.where('isHidden', 1).whereHas('user', (userQuery) => {
-              userQuery.where('email', current_user)
-            })
+        .preload('user', (query) => {
+          query.select('email', 'image')
+        })
+        .withCount('likes')
+        .withCount('comments')
+        .preload('likes', (query) => {
+          query.select('post_id', 'user_id').preload('user', (query) => {
+            query.select('email', 'image')
           })
         })
-        .orderBy('postCreatedAt', 'desc')
-        .paginate(page_number, 5)
-
-      const currentUserInfo = await User.query().where('email', current_user).first()
-      const currentUserId = currentUserInfo?.userId || null
-
-      const enhancedPosts = await Promise.all(
-        posts.map(async (post) => {
-          const likeInfo = await PostLike.query()
-            .where('postId', post.postId)
-            .count('*', 'totalLikes')
-            .first()
-
-          const last10Users = await PostLike.query()
-            .where('postId', post.postId)
-            .preload('user')
-            .orderBy('likedAt', 'desc')
-            .limit(10)
-
-          let userLiked = false
-          if (currentUserId) {
-            const userLike = await PostLike.query()
-              .where('postId', post.postId)
-              .where('userId', currentUserId)
-              .first()
-
-            userLiked = !!userLike
-          }
-
-          const commentCount = await PostComment.query()
-            .where('postId', post.postId)
-            .count('*', 'total')
-            .first()
-
-          return {
-            ...post.serialize(),
-            totalLikes: likeInfo ? Number(likeInfo.$extras.totalLikes) : 0,
-            last10users: last10Users.map((like) => ({
-              email: like.user.email,
-              userId: like.user.userId,
-            })),
-            commentCount: commentCount ? Number(commentCount.$extras.total) : 0,
-            liked: userLiked,
-          }
+        .preload('liked', (query) => {
+          query.where('post_likes.user_id', current_user_id.$attributes.userId)
         })
-      )
+        .where((query) => {
+          query.where('isHidden', false).orWhere('user_id', current_user_id.$attributes.userId)
+        })
+        .orderBy('postCreatedAt', 'desc')
+        .forPage(payload.page_number, 10)
 
-      return enhancedPosts
+      const formattedPosts = posts.map((post) => {
+        return {
+          postId: post.postId,
+          userId: post.userId,
+          postCreatedAt: post.postCreatedAt,
+          isHidden: post.isHidden,
+          postText: post.postText,
+          user: post.user,
+          totalLikes: post.$extras.likes_count,
+          commentCount: post.$extras.comments_count,
+          last10users: post.likes.map((like) => {
+            return like.user
+          }),
+          liked: post.liked.length >= 1,
+        }
+      })
+
+      return formattedPosts
     } catch (error) {
       throw new Error(`Failed to fetch posts: ${error.message}`)
     }
   }
-
   public async getPostLikes(postId: number) {
     try {
       const totalLikes = await PostLike.query().where('postId', postId).count('*', 'total').first()
@@ -355,5 +335,22 @@ export default class PostQuery {
     post.isHidden = !post.isHidden
     await post.save()
     return post
+  }
+  public async popularpost() {
+    const postsWithLikes = await db
+      .from('posts')
+      .join('users', 'posts.user_id', '=', 'users.user_id')
+      .leftJoin('post_likes', 'posts.post_id', '=', 'post_likes.post_id')
+      .leftJoin('post_comments', 'posts.post_id', '=', 'post_comments.post_id')
+      .select('posts.*')
+      .select('users.name')
+      .select(db.raw('COUNT(DISTINCT post_likes.post_likes_id) as totalLikes'))
+      .select(db.raw('COUNT(DISTINCT post_comments.comment_id) as totalComments'))
+      .groupBy('posts.post_id', 'users.name')
+      .orderBy('totalLikes', 'desc')
+      .orderBy('totalComments', 'desc')
+      .limit(10)
+
+    return postsWithLikes
   }
 }

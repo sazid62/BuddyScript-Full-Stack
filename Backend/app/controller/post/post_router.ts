@@ -24,4 +24,5 @@ router.group(() => {
   router.post('/isliked', [PostController, 'isliked'])
   router.post('/editpost', [PostController, 'editpost'])
   router.post('/ishidden', [PostController, 'isHidden'])
+  router.post('/popularpost', [PostController, 'popularpost'])
 })

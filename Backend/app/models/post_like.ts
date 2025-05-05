@@ -13,8 +13,8 @@ export default class PostLike extends BaseModel {
   @column()
   declare userId: number
 
-    @column()
-    declare postId: number
+  @column()
+  declare postId: number
 
   @column.dateTime({ autoCreate: true })
   declare likedAt: DateTime

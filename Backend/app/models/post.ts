@@ -30,6 +30,10 @@ export default class Post extends BaseModel {
     foreignKey: 'postId',
   })
   declare likes: HasMany<typeof PostLike>
+  @hasMany(() => PostLike, {
+    foreignKey: 'postId',
+  })
+  declare liked: HasMany<typeof PostLike>
 
   @hasMany(() => PostComment, {
     foreignKey: 'postId',

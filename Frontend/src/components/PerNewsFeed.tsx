@@ -112,10 +112,14 @@ export default function PerNewsFeed(props: PostExtends) {
     const handleLikeToggle = async () => {
       try {
         if (!props.liked) {
-          await axios.post("http://localhost:3333/likepost", {
-            postId: props.postId,
-            userId: current_user.id,
-          });
+          await axios.post(
+            "http://localhost:3333/likepost",
+            {
+              postId: props.postId,
+              userId: current_user.id,
+            },
+            { withCredentials: true }
+          );
 
           // Update like info in Redux store
           dispatch(
@@ -126,10 +130,14 @@ export default function PerNewsFeed(props: PostExtends) {
             })
           );
         } else {
-          await axios.post("http://localhost:3333/dislikepost", {
-            post_id: props.postId,
-            user_id: current_user.id,
-          });
+          await axios.post(
+            "http://localhost:3333/dislikepost",
+            {
+              post_id: props.postId,
+              user_id: current_user.id,
+            },
+            { withCredentials: true }
+          );
 
           // Update like info in Redux store
           dispatch(
@@ -159,6 +167,7 @@ export default function PerNewsFeed(props: PostExtends) {
         postId: props.postId,
         userId: current_user.id,
       }),
+      credentials: "include",
     }).then((res) => res.json());
 
     dispatch(
@@ -180,10 +189,14 @@ export default function PerNewsFeed(props: PostExtends) {
     }).then((result) => {
       if (result.isConfirmed) {
         axios
-          .post(`${conf.apiUrl}/deletepost`, {
-            postId: props.postId,
-            userId: props.userId,
-          })
+          .post(
+            `${conf.apiUrl}/deletepost`,
+            {
+              postId: props.postId,
+              userId: props.userId,
+            },
+            { withCredentials: true }
+          )
           .then(() => {
             // Update Redux store after successful deletion
             dispatch(DeletePost({ postId: props.postId }));
@@ -201,11 +214,15 @@ export default function PerNewsFeed(props: PostExtends) {
   // Submit edited post
   function handleEditSubmit(updatedText) {
     axios
-      .post(`${conf.apiUrl}/editpost`, {
-        postId: props.postId,
-        userId: props.userId,
-        postText: updatedText,
-      })
+      .post(
+        `${conf.apiUrl}/editpost`,
+        {
+          postId: props.postId,
+          userId: props.userId,
+          postText: updatedText,
+        },
+        { withCredentials: true }
+      )
       .then(() => {
         // Update Redux store after successful edit
         dispatch(
